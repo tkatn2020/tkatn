@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#E89BAE" />
+
+    <!-- PWA / iOS 홈 화면 추가 설정 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="경민의 임신일기" />
+
+    <!-- 아이콘 (SVG inline) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23E89BAE'/%3E%3Cpath d='M50 75 L25 50 A15 15 0 1 1 50 35 A15 15 0 1 1 75 50 Z' fill='white'/%3E%3C/svg%3E" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23E89BAE'/%3E%3Cpath d='M50 75 L25 50 A15 15 0 1 1 50 35 A15 15 0 1 1 75 50 Z' fill='white'/%3E%3C/svg%3E" />
+
+    <title>경민의 임신일기</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 한글 폰트 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            margin: 0;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+        }
+        * { -webkit-user-select: none; user-select: none; }
+        input, textarea { -webkit-user-select: text; user-select: text; }
+        #loading { display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Noto Sans KR', sans-serif; color: #C97891; }
+    </style>
+</head>
+<body>
+    <div id="root"><div id="loading">앱 로딩 중...</div></div>
+
+    <!-- Import Map: React 모듈 매핑 -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.3.1",
+            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+            "lucide-react": "https://esm.sh/lucide-react@0.383.0?deps=react@18.3.1"
+        }
+    }
+    </script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- 앱 컴포넌트 코드 -->
+    <script type="text/babel" data-type="module" data-presets="react">
+import React, { useState, useMemo } from 'react';
+import { createRoot } from 'react-dom/client';
+import { Heart, Calendar, Apple, Activity, Gift, AlertCircle, Baby, ChevronRight, ChevronDown, Clock, MapPin, Phone, Pill, Coffee, Moon, Dumbbell, Shield, FileText, Sparkles, TrendingUp, Bell, Home, Book, X, ShoppingBag, Shirt, Package, ExternalLink, CheckCircle2 } from 'lucide-react';
+
+const TRANSFER_DATE = new Date('2026-04-23');
+const TODAY = new Date('2026-05-11');
+const DUE_DATE_TWIN = new Date('2026-12-23');
+
+const getDaysBetween = (date1, date2) => Math.floor((date2 - date1) / (1000 * 60 * 60 * 24));
+const getWeekDay = (date) => {
+  const totalDays = getDaysBetween(TRANSFER_DATE, date) + 17;
+  return { weeks: Math.floor(totalDays / 7), days: totalDays % 7, totalDays };
+};
+
+function PregnancySuperApp() {
+  const [activeTab, setActiveTab] = useState('home');
+  const [expandedWeek, setExpandedWeek] = useState(null);
+  const [expandedBenefit, setExpandedBenefit] = useState(null);
+  const [expandedNutrient, setExpandedNutrient] = useState(null);
+  const [expandedProduct, setExpandedProduct] = useState(null);
+  const [productCategory, setProductCategory] = useState('now');
+  const [benefitCategory, setBenefitCategory] = useState('national');
+  const [showEmergency, setShowEmergency] = useState(false);
+
+  const currentWeek = useMemo(() => getWeekDay(TODAY), []);
+  const daysToTwin = useMemo(() => getDaysBetween(TODAY, DUE_DATE_TWIN), []);
+  const daysToNextCheckup = useMemo(() => getDaysBetween(TODAY, new Date('2026-05-18')), []);
+
+  const colors = {
+    primary: '#E89BAE', primaryDark: '#C97891', secondary: '#9BC9B5',
+    cream: '#FFF8F3', warmGray: '#5C4A4A', soft: '#F5E6E8',
+    accent: '#FFB088', danger: '#E57373', success: '#81C784'
+  };
+
+  // 주차별 데이터
+  const weeklyData = [
+    { week: 5, range: '5주', date: '5/11 ~ 5/17', baby: '아기집(GS) 2개 형성. 길이 약 2mm', babyDetail: '난황낭 형성 시작. 태아극은 아직 안 보일 수 있음.', mom: '입덧 시작 가능, 가슴 통증, 피로감', momDetail: '쌍태아는 hCG가 단태보다 높아 입덧이 더 일찍, 더 심하게 올 수 있습니다.', symptoms: ['입덧 초기', '피로감', '가슴 통증', '잦은 소변'], check: '1차 초음파 - 아기집 확인 완료', risk: '높음 (15%)', critical: true, tips: ['엽산 1mg 계속', '카페인 200mg 이하', '수분 2.5L 이상', '뜨거운 목욕 금지'] },
+    { week: 6, range: '6주', date: '5/18 ~ 5/24', baby: '태아극 형성, 심박 시작 (100-130회/분)', babyDetail: '6주 0일 심박 확인 확률 약 60-70%. 안 보여도 정상 가능.', mom: '입덧 본격 시작, 후각 예민', momDetail: '입덧 가장 심한 시기 진입. 소량 다회 식사, 단백질 위주.', symptoms: ['입덧 심화', '구토', '식욕 변화', '졸음'], check: '🔥 2차 초음파 - 심박 확인 (5/18)', risk: '높음 (12%)', critical: true, tips: ['생강차로 입덧 완화', '비스킷 머리맡 비치', '천천히 일어나기', '냄새 강한 음식 피하기'] },
+    { week: 7, range: '7주', date: '5/25 ~ 5/31', baby: '심박 안정화 (140-170회). CRL 8-10mm', babyDetail: '두 태아 심박 명확. DCDA 최종 확정 시기.', mom: '입덧 절정', symptoms: ['극심한 입덧', '기분 변화', '두통', '어지러움'], check: '확인 초음파 (필요시)', risk: '낮음 (5%)', critical: false, tips: ['소량 다회 식사 7회', '비타민B6 도움', '입덧 심하면 병원 상의'] },
+    { week: 8, range: '8주', date: '6/1 ~ 6/7', baby: '팔다리 형성, 손가락 분리', babyDetail: '주요 장기 형성 시작. CRL 14-20mm.', mom: '체중 약간 증가', symptoms: ['입덧 유지', '복부 팽창', '변비'], check: '8주 초음파', risk: '낮음 (3%)', critical: true, tips: ['엽산 계속', '철분제 시작 권장', '7-9시간 수면'] },
+    { week: 9, range: '9주', date: '6/8 ~ 6/14', baby: '심박 170-180회, 움직임 시작', babyDetail: '근육 발달로 자발적 움직임 (산모는 못 느낌).', mom: '입덧 가장 심한 시기 마무리', symptoms: ['입덧 완화 시작', '체중 변화'], check: '9주 초음파 (필요시)', risk: '낮음 (3%)', critical: false, tips: ['NIPT 준비 상담', '치과 검진 추천'] },
+    { week: 10, range: '10주', date: '6/15 ~ 6/21', baby: 'CRL 30-40mm, 모든 장기 위치 확정', babyDetail: '태반이 본격 기능 시작.', mom: '입덧 점차 완화', symptoms: ['입덧 완화', '체력 회복'], check: '🌟 NIPT 가능 시점', risk: '매우 낮음 (1-2%)', critical: false, tips: ['NIPT 검사 가능 (50-70만원)', '쌍태는 NIPT 정확도 다소 낮음'] },
+    { week: 11, range: '11주', date: '6/22 ~ 6/28', baby: 'CRL 50mm, 외부 생식기 구분 시작', babyDetail: '얼굴 윤곽 명확. 손톱 형성.', mom: '입덧 완화, 식욕 회복', symptoms: ['에너지 회복', '식욕 증가'], check: '🌟 NT 검사 + 1차 기형아', risk: '매우 낮음 (1%)', critical: true, tips: ['NT 검사 11-13주 6일', '쌍태 정밀 검사'] },
+    { week: 12, range: '12주', date: '6/29 ~ 7/5', baby: 'CRL 60mm, 모든 기관 형성 완료', babyDetail: '🎉 기관 형성기 종료. 이후는 성장과 성숙.', mom: '🎉 안정기 진입', momDetail: '유산율 1% 미만. 임신 공개 시점.', symptoms: ['컨디션 회복', '복부 약간 나옴'], check: '🎉 1분기 통과', risk: '매우 낮음 (1% 미만)', critical: true, tips: ['임신 공개 가능', '튼살 예방 시작', '임산부 운동 시작'] },
+    { week: 14, range: '14주', date: '7/13 ~ 7/19', baby: 'CRL 87mm, 양수 마시기 시작', babyDetail: '얼굴 표정 가능. 머리카락 형성.', mom: '2분기, 가장 편한 시기', symptoms: ['입덧 거의 사라짐', '에너지 충만'], check: '2차 기형아 검사', risk: '매우 낮음', critical: false, tips: ['임산부 요가 가능', '체중 관리 시작'] },
+    { week: 16, range: '16주', date: '7/27 ~ 8/2', baby: 'CRL 116mm, 성별 구분 가능', babyDetail: '🎀 초음파 성별 확인 가능.', mom: '배 본격 나옴', symptoms: ['배 둥글어짐', '태동 시작'], check: '🎀 성별 확인 초음파', risk: '매우 낮음', critical: false, tips: ['임부복 준비', '튼살 크림 시작'] },
+    { week: 20, range: '20주', date: '8/24 ~ 8/30', baby: '체중 300g, 길이 25cm', babyDetail: '귀, 코 명확. 청각 발달.', mom: '🎊 임신 중간 지점!', symptoms: ['태동 본격적', '체중 증가', '허리 통증'], check: '🌟 정밀 초음파', risk: '매우 낮음', critical: true, tips: ['태교 본격 시작', '아빠 태담', '쌍둥이 옷 준비'] },
+    { week: 24, range: '24주', date: '9/21 ~ 9/27', baby: '체중 600g, 생존 가능선', babyDetail: '미숙아 출생 시 생존 가능. 폐 발달.', mom: '체중 증가, 부종', symptoms: ['배 부름', '소화불량', '다리 부종'], check: '🌟 임신성 당뇨 검사', risk: '낮음', critical: true, tips: ['단순당 줄이기', '쌍태 당뇨 위험 2배', '걷기 권장'] },
+    { week: 28, range: '28주', date: '10/19 ~ 10/25', baby: '체중 1.1kg, 눈 깜빡임', babyDetail: '망막 발달. 빛 반응. 3분기 진입.', mom: '3분기, 활동 제한', symptoms: ['숨가쁨', '심한 부종', '수면 불편'], check: '🌟 자궁경부 길이 측정', risk: '낮음', critical: true, tips: ['조산 모니터링', '왼쪽으로 누워자기', '출산 가방 준비'] },
+    { week: 32, range: '32주', date: '11/16 ~ 11/22', baby: '체중 1.8kg, 폐 성숙', babyDetail: '대부분 장기 성숙. 출산 위치 결정.', mom: '격주 검진', symptoms: ['배 매우 큼', '잠 못 잠'], check: '격주 정기 검진', risk: '낮음', critical: false, tips: ['쌍둥이 조산 50%+', '병원 가까이'] },
+    { week: 36, range: '36주', date: '12/14 ~ 12/20', baby: '체중 2.5kg, 거의 만삭', babyDetail: '🎉 쌍태아 만삭. NICU 입원 가능성 낮음.', mom: '⭐ 출산 임박', symptoms: ['태아 하강', '진통감'], check: '🎉 매주 검진, 출산 임박', risk: '매우 낮음', critical: true, tips: ['출산 가방 완성', '병원 동선 점검'] },
+    { week: 38, range: '38주', date: '12/28 ~ 1/3', baby: '체중 2.8kg+, 출산 준비 완료', babyDetail: '쌍태아 평균 출산 주수.', mom: '⭐ 출산 평균 시기', symptoms: ['진통 시작 가능'], check: '🎊 출산 (평균 시점)', risk: '-', critical: true, tips: ['진통 간격 측정법', '비상 연락처'] }
+  ];
+
+  const nutrients = [
+    { name: '엽산 (Folic Acid)', priority: '필수', period: '임신 12주까지', amount: '쌍태아 1mg/일', timing: '아침 공복', role: '신경관 결손 예방', foods: '시금치, 브로콜리, 아스파라거스', notes: '쌍태아는 단태보다 높은 용량 권장', brands: '솔가, 나우푸드, 임산부 종합비타민' },
+    { name: '철분 (Iron)', priority: '필수', period: '16주 이후 ~ 출산 후', amount: '30-60mg/일', timing: '식간 (커피 2시간 전후 피하기)', role: '빈혈 예방. 쌍태아 빈혈 위험 40%', foods: '소고기, 닭간, 시금치, 검은콩', notes: '비타민C와 함께 흡수율 ↑', brands: '훼럼키드, 헤모큐, 임산부 처방 철분제' },
+    { name: '칼슘 (Calcium)', priority: '필수', period: '임신 전 기간', amount: '1,500mg/일 (쌍태)', timing: '식사와 함께, 분할', role: '두 태아 골격 형성', foods: '우유, 요거트, 멸치, 두부', notes: '한 번에 500mg 이상 흡수 안 됨. 2-3회 분할', brands: '센트룸, 솔가 칼슘+마그네슘+D' },
+    { name: '비타민 D', priority: '권장', period: '임신 전 기간', amount: '600-1,000 IU/일', timing: '지방과 함께', role: '칼슘 흡수, 면역, 임신중독 예방', foods: '연어, 고등어, 계란노른자', notes: '검사 후 부족 시 의사 처방 가능', brands: '나우푸드 D3, 솔가' },
+    { name: 'DHA / 오메가-3', priority: '권장', period: '임신 중기 이후', amount: '200-300mg DHA/일', timing: '식사 후', role: '태아 뇌, 망막 발달', foods: '연어, 고등어, 정어리', notes: '임산부 전용 (수은 적은 어유)', brands: '노르딕내추럴스 프리네이탈, 솔가' },
+    { name: '마그네슘', priority: '선택', period: '임신 중기 이후', amount: '350-450mg/일', timing: '저녁', role: '다리 쥐 예방, 수면 개선', foods: '아몬드, 호박씨, 시금치', notes: '설사 부작용 가능', brands: '나우푸드 마그네슘 글리시네이트' },
+    { name: '프로바이오틱스', priority: '선택', period: '임신 ~ 수유', amount: '100-200억 CFU/일', timing: '공복', role: '장 건강, 변비 예방', foods: '요거트, 김치, 된장', notes: '항생제 복용 시 2시간 차이', brands: '바이옴 임산부, 락피더스 임산부' },
+    { name: '임산부 종합비타민', priority: '권장', period: '임신 전 기간', amount: '1정/일', timing: '식사 중', role: '엽산, 철분 등 통합 보충', foods: '-', notes: '비타민A 과잉 주의', brands: '쎈텀 임산부, 솔가 프리네이탈' }
+  ];
+
+  const dietGuide = {
+    daily: [
+      { meal: '아침 (7-8시)', items: '오트밀+견과류+딸기, 우유 1잔, 삶은 계란 2개', protein: 25, calorie: 500 },
+      { meal: '간식 1 (10시)', items: '바나나, 치즈, 견과류 한 줌', protein: 10, calorie: 250 },
+      { meal: '점심 (12-13시)', items: '현미밥, 닭가슴살 150g, 시금치무침, 미역국', protein: 45, calorie: 700 },
+      { meal: '간식 2 (15시)', items: '그릭요거트+블루베리, 통밀 크래커', protein: 15, calorie: 250 },
+      { meal: '저녁 (18-19시)', items: '잡곡밥, 연어구이 150g, 브로콜리, 콩나물국', protein: 40, calorie: 700 },
+      { meal: '간식 3 (21시)', items: '우유 1잔, 삶은 고구마', protein: 10, calorie: 200 }
+    ],
+    totals: { protein: 145, calorie: 2600, water: 2.5 },
+    rules: ['쌍태 칼로리 +600kcal', '단백질 175g 목표', '소량 다회 (5-7회)', '공복 피하기', '수분 2.5-3L', '카페인 200mg 이하', '생선 익혀서', '저염식'],
+    avoid: [
+      { item: '날 음식 (회, 육회, 굴)', reason: '리스테리아, 톡소플라스마' },
+      { item: '술 (모든 양)', reason: '태아알코올증후군' },
+      { item: '담배/간접흡연', reason: '저체중아, 조산' },
+      { item: '큰 생선 (참치, 황새치)', reason: '수은 축적' },
+      { item: '카페인 과다 (>200mg)', reason: '저체중아 위험' },
+      { item: '한약/산삼/보약', reason: '안전성 미입증' },
+      { item: '날계란', reason: '살모넬라' },
+      { item: '비타민 A 과다', reason: '기형 위험' }
+    ]
+  };
+
+  // ⭐ 검증된 국가 혜택 (2026.5 기준, 정부 공식 자료)
+  const nationalBenefits = [
+    { name: '임신·출산 진료비 (국민행복카드)', amount: '쌍태아 200만원', when: '임신 확인 즉시', detail: '【2025.1.1 변경】 단태 100만원 / 쌍태아 200만원 (기본 140만원 + 추가 60만원 자동 합산). 사용 기간: 출산 후 2년', how: '산부인과 임신확인서 → 카드사 신청 (BC, 삼성, 롯데, KB, 신한)', where: '카드사 앱, 정부24, 복지로', usage: '병원 진료비, 약제비, 2세 미만 영유아 진료비', deadline: '출산일로부터 2년', tip: '쌍태아 추가 60만원은 자동 합산 (별도 신청 불필요)', source: '✓ 보건복지부, NHIS, 사회서비스 전자바우처 공식' },
+    { name: '첫만남이용권', amount: '쌍둥이 500만원', when: '출생 후 1년 이내', detail: '첫째 200만원 + 둘째 300만원 = 500만원 (2024.1.1~). 2026년부터 사용 기간 2년으로 확대', how: '출생신고 + 행복출산 원스톱 통합 신청', where: '봉담읍 행정복지센터, 정부24, 복지로', usage: '유흥/사행/면세점/마사지 제외 전 업종', deadline: '출생일로부터 2년 (2024~ 출생아)', tip: '국민행복카드 바우처 포인트로 지급', source: '✓ 보건복지부 공식' },
+    { name: '부모급여', amount: '쌍둥이 월 200만원 (0세)', when: '출생 후 60일 이내', detail: '0세 (0-11개월): 100만원/명 × 2 = 200만원/월. 1세 (12-23개월): 50만원/명 × 2 = 100만원/월', how: '출생신고 시 행복출산 원스톱', where: '봉담읍 행정복지센터', usage: '현금 지급', deadline: '60일 넘기면 신청월부터만', tip: '꼭 60일 이내 신청 (출생일 소급)', source: '✓ 보건복지부 공식' },
+    { name: '아동수당', amount: '쌍둥이 월 20만원', when: '출생 후 60일 이내', detail: '만 8세 미만 1명당 월 10만원. 2026년부터 매년 1세씩 확대 → 최종 만 13세 미만 (2030)', how: '부모급여와 통합 신청', where: '봉담읍 행정복지센터', usage: '현금 (소득 무관)', deadline: '60일 이내', tip: '부모급여와 자동 연계', source: '✓ 보건복지부 공식' },
+    { name: '출산전후휴가 (다태아)', amount: '쌍태아 120일', when: '출산 전후', detail: '【근로기준법 제74조】 쌍태 120일 (단태 90일). 출산 후 60일 이상 배정. 급여 상한 월 220만원 (2026.1.1~ 인상)', how: '회사 신청 → 출산 후 고용보험 신청', where: '회사, 고용보험 (ei.go.kr)', usage: '유급 휴가', deadline: '휴가 종료 후 12개월 이내', tip: '대기업: 75일 회사+45일 고용보험', source: '✓ 근로기준법, 고용노동부' },
+    { name: '배우자 출산휴가', amount: '20일 유급', when: '출산 후 90일 이내', detail: '【2025년 확대】 아빠(이재영) 20일 유급. 분할 3회 가능. 상한 약 168만원', how: '회사 신청', where: '회사, 고용보험', usage: '아빠 휴가', deadline: '출산 90일 이내 시작', tip: '⭐ 쌍태아 산후조리 필수', source: '✓ 남녀고용평등법 제18조의2' },
+    { name: '육아휴직', amount: '자녀당 부모 각 1년 (또는 1.5년)', when: '자녀 만 8세 이하', detail: '【중요】 자녀 1명당, 부모가 각각 1년씩 사용 가능. 부모 모두 3개월+ 사용 시 각각 1.5년으로 연장. 쌍둥이(2명)는 이론상 부모 각자 최대 2년(확장 시 3년) 가능. 1-3개월 250만/4-6개월 200만/7-12개월 160만원 (2025.1.1 사후지급금 폐지)', how: '회사 → 고용보험', where: '회사, 고용보험', usage: '통상임금 100%/80%', deadline: '자녀 만 8세 또는 초2 이하', tip: '⭐ 쌍둥이는 두 자녀 동시 양육이라 보통 한 번에 1년 사용. 3회 분할 가능', source: '✓ 남녀고용평등법 2025.2.23 개정' },
+    { name: '6+6 부모육아휴직제', amount: '첫 6개월 최대 월 450만원', when: '자녀 18개월 이내', detail: '【2024 신설】 부모 동시/순차 6개월 사용 시 통상임금 100%. 1→2→3→4→5→6개월: 250→250→300→350→400→450만원', how: '회사 → 고용보험', where: '회사, 고용보험', usage: '부부 모두 사용 시 인상', deadline: '자녀 18개월 이내', tip: '⭐ 쌍둥이 최적 활용', source: '✓ 고용보험법' },
+    { name: '산모·신생아 도우미', amount: '쌍태아 10-20일', when: '출산 40일 전 ~ 30일 후', detail: '【2024 소득기준 폐지】 모든 출산가정. 쌍태아: 인력 1인 또는 2인 선택, 단축 10일/표준 15일/연장 20일', how: '서부보건소 또는 복지로', where: '화성시 서부보건소', usage: '집 방문 산모+신생아 케어', deadline: '출산 30일 이내 신청, 바우처 60일 내 소진', tip: '⭐ 쌍태아 신청 폭주, 미리 신청', source: '✓ 화성시 공식 (소득기준 폐지 확인)' },
+    { name: '미숙아·선천성 이상아 의료비', amount: '최대 1,000만원', when: '미숙아 출생 시', detail: '【2024 소득기준 폐지】 미숙아 (37주 미만 또는 2.5kg↓) NICU 입원. 체중별 최대 1,000만원. 선천성 이상아 최대 500만원', how: '퇴원 후 6개월 이내 보건소 신청', where: '효행구보건소', usage: '의료비 환급', deadline: '퇴원 6개월 이내', tip: '⭐ 쌍태아 조산 50%+, 매우 중요', source: '✓ 보건복지부, 화성시 공식' },
+    { name: '산후조리비 의료비 세액공제', amount: '연 200만원 한도', when: '연말정산', detail: '【2024 소득기준 폐지】 산후조리원 비용 200만원 한도 세액공제 (소득 무관). 세액공제율 15%', how: '연말정산 시 영수증 제출', where: '회사 인사팀', usage: '세금 환급', deadline: '다음해 연말정산', tip: '⭐ 산후조리원 영수증 보관 필수', source: '✓ 국세청, 소득세법' },
+    { name: '국민연금 출산크레딧', amount: '12개월 가입기간 인정', when: '연금 수급 시', detail: '【2026 개정】 첫째도 12개월 인정. 둘째 이상은 18개월씩 추가. 상한 50개월 폐지', how: '국민연금공단 신청', where: '국민연금공단', usage: '노후 연금 기간 인정', deadline: '수급 시점', tip: '미래 연금 수급액 증가', source: '✓ 국민연금법 2026 개정' },
+    { name: '자녀 세액공제 (2026)', amount: '연 55만원 (쌍둥이)', when: '연말정산', detail: '【2026.1~】 첫째 25만원, 둘째 30만원 → 쌍둥이 합 55만원/년. 만 8세 이상부터', how: '연말정산', where: '회사', usage: '세금 공제', deadline: '매년', tip: '8세 미만은 아동수당으로 대체', source: '✓ 소득세법 2026' },
+    { name: '출산·보육수당 비과세', amount: '월 20만원/명', when: '매월 급여', detail: '6세 이하 자녀 1명당 월 20만원 회사 지급분 비과세. 쌍둥이 = 40만원/월', how: '회사 출산수당 신청', where: '회사 인사팀', usage: '세금 비과세 (실수령액↑)', deadline: '매월', tip: '삼성전자 지급 여부 인사팀 확인', source: '✓ 소득세법' },
+    { name: '다자녀 자동차 취득세 감면', amount: '최대 140만원', when: '자동차 구매 시', detail: '【2026~ 2자녀로 확대!】 18세 이하 자녀 2명 100만원, 3명 200만원, 4명+ 300만원 한도. 7인 미만 승용차 140만원 한도', how: '차량등록사업소', where: '화성시 차량등록사업소', usage: '취득세 감면', deadline: '차량 등록 시', tip: '⭐ 쌍둥이 출생 후 차량 구매 시 즉시 활용', source: '✓ 지방세특례제한법 2026 개정' },
+    { name: '혼인·출산 증여세 공제', amount: '최대 1억원 (양가 3억원)', when: '자녀 출생 2년 이내', detail: '【2024 신설】 자녀 출생일 2년 이내 직계존속(부모/조부모) 증여 1억원까지 비과세. 기본공제 5천만원 별도', how: '증여세 신고 시 적용', where: '관할 세무서', usage: '증여세 면제', deadline: '출생 2년 이내', tip: '⭐ 양가 도움 받을 계획 시 활용', source: '✓ 상속세 및 증여세법' },
+    { name: '신생아 특례 주택 대출', amount: '구입 5억 / 전세 3억', when: '출생 후 2년 이내', detail: '【2024 신설】 무주택 가구. 주택구입 9억 이하 최대 5억 대출, 전세 8억 이하 최대 3억. 저금리 연 1.6~3.3%', how: '주택도시기금 (HUG)', where: '시중은행', usage: '저금리 주택 자금', deadline: '출생 후 2년', tip: '⭐ 자녀 1명당 0.1% 추가 우대 → 쌍둥이 0.2% 추가', source: '✓ 국토교통부, 주택도시기금' },
+    { name: '신혼·신생아 주택 특별공급', amount: '청약 우선권', when: '주택 구매 시', detail: '【2026.2~】 민간분양 신혼부부 특공 18%→23%. 신생아 가구 추가 1회 허용', how: '청약홈에서 자격 신청', where: '청약홈', usage: '특별공급 자격', deadline: '청약 시', tip: '쌍둥이는 다자녀 특공도 가능', source: '✓ 국토교통부 2026' },
+    { name: '임산부 영양플러스', amount: '월 식품 패키지', when: '임신 ~ 출산 후 6개월', detail: '기준중위소득 80% 이하. 우유, 계란, 채소 등. 4월/10월 모집', how: '서부보건소 방문', where: '화성시 서부보건소', usage: '식품 + 영양 상담', deadline: '모집 기간', tip: '소득 해당 시 신청', source: '✓ 보건복지부, 화성시 공식' },
+    { name: 'KTX/SRT 임산부 할인', amount: '30-40% 할인', when: '임신 확인 후', detail: 'SRT 30% (동반 1인), KTX 특실', how: '코레일톡 / SRT 앱 등록', where: '온라인 앱', usage: '본인+동반 1인', deadline: '출산 후 1년', tip: '미리 등록', source: '✓ 코레일, SR 공식' },
+    { name: '전기요금 출산가구 할인', amount: '월 16,000원 한도 (30%)', when: '출생 후 ~ 만 3세', detail: '출생일로부터 3년 미만 영아 가구. 전기요금 30% 할인 (7-8월 28,000원)', how: '한국전력공사 신청', where: '한전 (☎ 123)', usage: '전기요금 할인', deadline: '신청일부터', tip: '온라인/팩스/방문 신청', source: '✓ 한국전력공사' },
+    { name: '임신 초기 유·사산 휴가 확대', amount: '10일 (2026.2~)', when: '11주 이내 유사산 시', detail: '【2026.2~】 5일에서 10일로 확대. 참고용', how: '회사 신청', where: '회사', usage: '유급 휴가', deadline: '유사산 시', tip: '참고용 (현재 임신 진행 중)', source: '✓ 근로기준법 2026 개정' },
+    { name: '자녀장려금 (CTC)', amount: '자녀 1인당 최대 100만원', when: '연말정산', detail: '부부합산 소득 7,000만원 미만. 자녀 1인당 최대 100만원. 쌍둥이 최대 200만원', how: '국세청 신청', where: '홈택스', usage: '현금 환급', deadline: '매년', tip: '삼성전자 임직원 소득 초과 가능성. 소득 확인', source: '✓ 조세특례제한법' }
+  ];
+
+  // ⭐ 검증된 화성시·경기도·봉담 혜택
+  const localBenefits = [
+    { name: '🏠 화성시 출산지원금', amount: '쌍둥이 300만원', when: '출생 후 1년 이내', detail: '첫째 100만원 + 둘째 200만원 = 300만원 현금. 부 또는 모가 출생일 기준 180일 전부터 화성시 거주 필수', how: '봉담읍 행정복지센터 방문 또는 정부24', where: '봉담읍 행정복지센터', usage: '현금 지급', deadline: '출생일로부터 1년', tip: '신청 다음 달 30일 지급', contact: '화성시효행구돌봄복지과 ☎ 031-5189-7652', source: '✓ 화성시 공식 (hscity.go.kr)' },
+    { name: '🌳 경기도 산후조리비', amount: '쌍둥이 100만원', when: '출생 후 1년 이내', detail: '출생아 1인당 50만원 × 2 = 100만원 (경기지역화폐 카드형). 경기도 거주 + 경기도 출생등록', how: '출생신고 시 행복출산원스톱 또는 봉담읍 행복센터', where: '봉담읍 행정복지센터', usage: '경기지역화폐 (가맹점 결제)', deadline: '출생일 1년 이내', tip: '정확 명칭: "산후조리비 지원"', contact: '서부보건소 ☎ 031-5189-6267', source: '✓ 화성시·경기도 공식' },
+    { name: '🏥 고위험 임신부 의료비 지원', amount: '최대 300만원', when: '입원 치료 시', detail: '19대 고위험 임신질환(다태임신 포함!) 입원 시 비급여 본인부담금의 90% 지원, 최대 300만원', how: '입원 치료 후 서부보건소 신청', where: '화성시 서부보건소', usage: '비급여 의료비 환급', deadline: '치료 후', tip: '⭐ 쌍태임신 자체가 고위험. 입원하면 꼭 신청', contact: '서부보건소 고위험 ☎ 031-5189-3547', source: '✓ 화성시 공식 (다태임신 포함 명시)' },
+    { name: '👤 산모·신생아 도우미 (화성시)', amount: '쌍태아 10-20일', when: '출산 40일 전 ~ 30일 후', detail: '【2024 소득기준 폐지】 모든 화성시 출산가정. 쌍태아 인력 1인 또는 2인 선택, 단축 10일/표준 15일/연장 20일', how: '서부보건소 방문 또는 복지로', where: '화성시 서부보건소', usage: '집 방문 산후 케어', deadline: '바우처 60일 이내 소진', tip: '⭐ 쌍태아 인력 2인 권장. 미리 신청 필수', contact: '서부보건소 ☎ 031-5189-3547, 3563', source: '✓ 화성시 공식 (2024 소득기준 폐지 확인)' },
+    { name: '🍼 미숙아·선천성 이상아 의료비', amount: '최대 1,000만원', when: '미숙아 출생 시', detail: '【2024 소득기준 폐지】 미숙아 (37주 미만 또는 2.5kg↓) NICU 입원. 체중별 최대 1,000만원. 선천성 이상아 최대 500만원', how: '퇴원 후 6개월 이내 보건소 신청', where: '효행구보건소', usage: '의료비 환급', deadline: '퇴원 6개월 이내', tip: '⭐ 쌍태아 조산 50%+, 매우 중요', contact: '효행구보건소 ☎ 031-5189-6265', source: '✓ 화성시 공식 (2024 소득기준 폐지)' },
+    { name: '🍎 임산부 영양플러스 (화성시)', amount: '월 식품 패키지', when: '임신 중', detail: '기준중위소득 80% 이하. 우유, 계란, 채소, 콩 등. 4월/10월 모집', how: '서부보건소 영양플러스실 방문', where: '화성시 서부보건소', usage: '식품 + 영양교육', deadline: '모집기간', tip: '준비물: 건강보험고지서, 주민등록등본, 산모수첩', contact: '영양플러스실 ☎ 031-5189-3557', source: '✓ 화성시 공식' },
+    { name: '💳 맘애좋은 화성 다자녀카드', amount: '시설 30% 할인', when: '두 자녀 이상', detail: '근로자종합복지관, 스포츠센터 30% 할인. 청소년수련관 20% 할인. 쌍둥이=두 자녀 자동 인정', how: '봉담읍 행정복지센터 신청', where: '봉담읍 행정복지센터', usage: '화성시 공공시설 할인', deadline: '두 자녀 이상 출산 후', tip: '경기 I-Plus 카드와 동시 발급', contact: '☎ 031-5189-7652', source: '✓ 화성시 공식' },
+    { name: '💳 경기 아이플러스(I-Plus) 카드', amount: '경기도 시설 할인', when: '두 자녀 이상', detail: '경기도 전역 공공시설 할인. 화성 다자녀카드와 중복 사용 가능', how: '온라인 또는 봉담읍 주민센터', where: '경기도청, 주민센터', usage: '경기도 공공시설 할인', deadline: '신청 시점부터', tip: '맘애좋은 카드와 함께 발급', contact: '경기도 ☎ 031-120', source: '✓ 경기도청 공식' },
+    { name: '🚗 화성도시공사 주차 할인', amount: '주차요금 할인', when: '다자녀 카드 소지 시', detail: '다자녀 우대카드 제시 시 화성도시공사 주차장 할인', how: '주차장 정산 시 카드 제시', where: '화성도시공사 주차장', usage: '주차요금 감면', deadline: '카드 유효기간', tip: '맘애좋은 카드 또는 I-Plus 카드 활용', contact: '화성도시공사 ☎ 031-8059-6538', source: '✓ 화성시 공식' },
+    { name: '📚 내 생애 첫 도서관 (경기도)', amount: '도서 택배 배송', when: '임신 ~ 자녀 12개월', detail: '경기도사이버도서관 도서 택배. 월 2회, 5권 이내, 14일 대출', how: '경기도사이버도서관 가입 → 거주지 도서관 방문 승인', where: 'library.kr', usage: '도서 택배 대출', deadline: '자녀 12개월까지', tip: '⭐ 임신 중 태교책 활용', contact: '경기도사이버도서관 ☎ 031-252-5237', source: '✓ 경기도 공식' },
+    { name: '🎁 화성시 임산부 배지/엠블럼', amount: '임산부 배지', when: '임신 확인 후', detail: '봉담읍 행정복지센터 또는 서부보건소에서 임산부 배지/택시 우대 등록', how: '임신확인서 지참 방문', where: '봉담읍 행정복지센터, 서부보건소', usage: '임산부 배지, 주차증', deadline: '출산 후 24개월', tip: '임신 확인 즉시 방문해서 한 번에 처리', contact: '봉담읍 행정복지센터', source: '✓ 화성시 공식' },
+    { name: '🧸 화성형 아이키움터 (봉담점)', amount: '무료 놀이/육아 지원', when: '영유아', detail: '화성시 운영 영유아 놀이/돌봄 공간. 봉담점 운영', how: '홈페이지 사전 회원가입 또는 방문', where: '봉담읍 와우안길 17 11층', usage: '자유놀이실, 장난감 대여, 시간제 보육', deadline: '취학 전', tip: '⭐ 봉담 거주 시 매우 편리', contact: '화성시육아종합지원센터', source: '✓ 화성시 공식' }
+  ];
+
+  // ⭐ 삼성전자 사내 복지 (공식 자료 + 사내 정보 기반)
+  const samsungBenefits = [
+    { name: '🏫 사내 어린이집 (화성 포함)', amount: '정원 약 3,100명', when: '출산 후 ~ 취학 전', detail: '전국 8개 사업장 13개소 운영. 화성 사업장 포함. 임직원 자녀 우선', how: '사내 인트라넷 신청 (대기 가능)', where: '근무 사업장 어린이집', usage: '보육비 사내 지원', deadline: '재직 중', tip: '⭐ 쌍둥이 미리 대기 신청', contact: '인사팀 또는 어린이집 직접', source: '✓ 삼성전자 공식 (2026.3 보도)' },
+    { name: '👶 사내 육아휴직 (확장)', amount: '자녀 1명당 최대 2년 6개월', when: '자녀 만 12세 이하', detail: '【중요】 자녀 1명당 법정 1년 + 사내 추가 1년 6개월 = 총 2.5년. 쌍둥이는 자녀 2명이므로 이론상 김경민(엄마)는 최대 5년, 부부 합 최대 10년 가능. 단, 동시 양육 시 사내 정책상 연속 사용 제한 있을 수 있음', how: '사내 인사 시스템', where: '인사팀', usage: '휴직 (법정 급여 + α)', deadline: '자녀 만 12세 이하', tip: '⭐ 인사팀에 쌍둥이 케이스 정확한 사용 가능 기간 확인 필수', contact: '삼성전자 인사팀', source: '✓ 삼성전자 공식 (2026.3 보도) / 쌍둥이 적용 방식은 인사팀 확인' },
+    { name: '👨‍👶 다태아 배우자 출산휴가 (사내)', amount: '⚠ 김경민 적용 안 됨', when: '-', detail: '⚠ 이 항목은 삼성전자 임직원이 출산했을 때 그 배우자가 받는 휴가. 본 가정에서는 출산자가 김경민(삼성)이지만, 휴가 받는 사람은 이재영(삼성 외 회사). 따라서 이재영은 본인 회사 정책 + 법정 20일 적용. 김경민 본인은 사내 출산휴가 사용', how: '-', where: '-', usage: '-', deadline: '-', tip: '⭐ 이재영의 회사에 배우자 출산휴가 정책 직접 확인. 법정 20일 보장됨', contact: '이재영 회사 인사팀', source: '⚠ 본 가정 적용 안 됨 (사내 임직원 아닌 배우자에 적용)' },
+    { name: '💊 임직원/배우자/자녀 의료비', amount: '본인 100% 실비', when: '의료비 발생 시', detail: '본인 100% 실비, 배우자/자녀 영수증 1건당 1만원 초과 금액 지원 (사내 정보)', how: '사내 의료비 신청 시스템', where: '인사팀', usage: '의료비 환급', deadline: '의료비 발생 후', tip: '⭐ 출산/육아 영수증 모두 보관', contact: '삼성전자 인사팀', source: '⚠ 사내 정보. 인사팀 정확 확인 필요' },
+    { name: '🩺 임직원/배우자 건강검진', amount: '연 1회 종합', when: '매년', detail: '본인 + 배우자 매년 종합검진. 40세 이상 매년 1회', how: '사내 검진 신청', where: '삼성서울병원 등', usage: '건강검진', deadline: '연 1회', tip: '임신 중에도 산전 검사 일부 활용', contact: '삼성전자 인사팀', source: '✓ 삼성전자 공식' },
+    { name: '🍼 모성보호실/수유실', amount: '사업장 내 운영', when: '임신 ~ 수유 중', detail: '임직원 전용 휴게실, 수유실, 모유 보관 냉장고', how: '사업장 내 이용', where: '근무 사업장', usage: '휴식, 수유', deadline: '재직 중', tip: '출퇴근 시 활용', contact: '사업장 안내', source: '✓ 삼성전자 공식' },
+    { name: '🧘 임부 요가 + 예비맘 간식', amount: '사내 프로그램', when: '임신 중', detail: '사내 피트니스 임부 요가, 사내 식당 예비맘 간식 제공', how: '사내 신청', where: '사내 피트니스/식당', usage: '운동, 영양', deadline: '임신 중', tip: '⭐ 안전한 운동 + 영양', contact: '사업장 안내', source: '✓ 삼성전자 공식' },
+    { name: '🎓 자녀 학자금 지원', amount: '유치원~대학', when: '자녀 교육 시기', detail: '국내/해외 고등학교 300만원/년, 국내대학 전액, 해외대학 1,000만원/년', how: '사내 신청', where: '인사팀', usage: '학자금 지원', deadline: '재직 중', tip: '⭐ 쌍둥이 2명 모두 지원', contact: '삼성전자 인사팀', source: '⚠ 사내 정보 (블라인드 출처)' },
+    { name: '🏥 사내 병원', amount: '진료 무료', when: '근무 중', detail: '사업장 내 병원. 진료, 처방. 마음건강클리닉, 근골격센터', how: '예약 또는 방문', where: '사업장 내', usage: '진료, 처방', deadline: '재직 중', tip: '임신 중 컨디션 관리에 활용', contact: '사업장 사내 병원', source: '✓ 삼성전자 DS 공식' },
+    { name: '💵 복지포인트', amount: '연간 (수십~수백만원)', when: '매년', detail: '여가, 자기계발, 가족친화. 사내 복지몰 활용', how: '사내 복지 포털', where: '삼성 복지몰', usage: '자율 사용', deadline: '연도별 소진', tip: '⭐ 임부복, 임산부 용품 구매', contact: '사내 복지 포털', source: '✓ 삼성전자 공식' },
+    { name: '⏰ 자율 출퇴근 + 재택근무', amount: '근무 유연성', when: '재직 중', detail: '1일 4시간 이상, 주 40시간 이상 자율. 재택근무 가능 (직무별)', how: '팀장 협의', where: '근무지', usage: '유연 근무', deadline: '재직 중', tip: '⭐ 임신 후기 컨디션 따라 활용', contact: '소속 팀', source: '✓ 삼성전자 공식' },
+    { name: '🔄 리보딩(Reboarding) 프로그램', amount: '복직 적응 지원', when: '육아휴직 복귀 시', detail: '복귀 후 조기 적응 프로그램. 희망부서 우선 배치', how: '복귀 시 자동', where: '인사팀', usage: '직장 복귀 지원', deadline: '복귀 후', tip: '쌍둥이 케어 후 복귀에 도움', contact: '삼성전자 인사팀', source: '✓ 삼성전자 공식 (2026.3)' },
+    { name: '🎉 출산 경조금', amount: '사내 규정', when: '출산 시', detail: '경조사 경조금 + 휴가. 2026 임금협약에서 인상 협상 중 (2026.5 기준)', how: '사내 신청', where: '인사팀', usage: '현금 지급', deadline: '출산 후', tip: '⭐ 최신 정책 인사팀 확인', contact: '삼성전자 인사팀', source: '✓ 삼성전자 공식 (2026.5 임금협상)' },
+    { name: '🛍️ 임직원 할인몰', amount: '25% 할인', when: '재직 중', detail: '삼성전자제품 임직원 전용몰 25% 할인. 복지포인트 연 약 70만원 별도', how: '임직원 인증 후 구매', where: '임직원 전용몰', usage: '전자제품 구매', deadline: '재직 중', tip: '⭐ 신생아 가전 구매 활용', contact: '사내 복지몰', source: '⚠ 사내 정보 (정확 금액 인사팀)' },
+    { name: '🏘️ 주거 지원 (사내 대출)', amount: '주택자금 사내 대출', when: '주거 자금 필요 시', detail: '사내 대출, 이자보전 등', how: '사내 신청', where: '인사팀/재무팀', usage: '주거 자금', deadline: '재직 중', tip: '신생아 특례 대출과 비교', contact: '삼성전자 인사팀', source: '✓ 삼성 그룹 공식' },
+    { name: '💔 난임 휴직', amount: '최대 1년', when: '난임 시술 시', detail: '여직원 난임 휴직 최대 1년. 이번 시술 성공했지만 향후 참고', how: '사내 신청', where: '인사팀', usage: '시술 휴직', deadline: '시술 시', tip: '참고용', contact: '삼성전자 인사팀', source: '✓ 삼성전자 공식' }
+  ];
+
+  // 임산부 필수 제품
+  const products = {
+    now: [ // 지금~출산까지 (임신 5주 ~ 출산)
+      { category: '🤱 임부복 & 속옷', items: [
+        { name: '임산부 팬티 (5-7장)', when: '임신 중기부터', detail: '배 위로 올라오는 H라인 또는 배 아래 안착형. 사이즈 변화 대비 신축성 좋은 것', brands: '소임, 맘누리, 슈가플럼, 텐셀 소재 추천', price: '3-5만원/세트', priority: '필수' },
+        { name: '임부 브래지어 (3-5개)', when: '임신 초기부터', detail: '와이어 없는 형태. 가슴 변화에 따라 사이즈 업 가능. 수유 호환형이면 출산 후도 사용', brands: '소임, 맘누리, 부드러운 면 소재', price: '2-4만원/개', priority: '필수' },
+        { name: '임부 레깅스 (2-3장)', when: '임신 중기 ~ 후기', detail: '배 부분이 부드럽게 늘어나는 형태. 외출/실내 겸용', brands: '소임, 해피텐, 임산부 전용', price: '2-4만원/장', priority: '필수' },
+        { name: '임부 원피스 (3-5벌)', when: '임신 중기 ~ 후기', detail: '편한 A라인. 외출용 1-2벌, 실내용 2-3벌. 봄/여름은 시원한 소재', brands: '소임, 해피텐, 맘누리', price: '3-7만원/벌', priority: '권장' },
+        { name: '임부 바지/팬츠', when: '임신 중기 ~ 후기', detail: '배 부분 밴드형. 청바지보다 부드러운 소재', brands: '소임, 해피텐', price: '3-6만원/벌', priority: '권장' },
+        { name: '수유복/수유원피스', when: '임신 후기 ~ 수유 중', detail: '수유 호환형 옷. 출산 후 모유수유 시 편함. 미리 1-2벌 준비', brands: '소임, 맘누리', price: '3-6만원/벌', priority: '권장' }
+      ]},
+      { category: '😴 수면용품', items: [
+        { name: '임산부 바디필로우 (★)', when: '임신 16주 이후', detail: '⭐ 쌍태아는 배가 더 빨리 커서 필수. C자형/U자형. 다리 사이+등 받침', brands: '바디스 임산부 바디필로우, 부코바, 메모리폼 소재', price: '5-15만원', priority: '필수' },
+        { name: '임산부 수면양말', when: '임신 중기 이후', detail: '발 시림/부종에 효과. 면 소재가 통기성 좋음', brands: '맘누리, 소임', price: '5천-1만원/켤레', priority: '권장' },
+        { name: '베개 (2-3개)', when: '임신 중기 이후', detail: '바디필로우 외 머리 받침용. 등 받침용 별도', brands: '메모리폼, 라텍스', price: '3-8만원/개', priority: '권장' },
+        { name: '수면 안대/마스크', when: '임신 후기 (불면 시)', detail: '쌍태아는 후기에 잠 잘 못 잠. 차광 도움', brands: '실크 소재 안대', price: '1-3만원', priority: '선택' }
+      ]},
+      { category: '🧴 위생/스킨케어', items: [
+        { name: '튼살 크림 (★)', when: '임신 12-14주부터', detail: '⭐ 쌍태아는 배가 단태보다 빨리/크게 늘어남. 일찍 시작 필수. 매일 2회', brands: '비오템 마미, 비오이리, 클라란스, 마마미오, 임산부 전용', price: '3-7만원/통', priority: '필수' },
+        { name: '임산부 전용 샴푸/바디워시', when: '임신 중기 이후', detail: '무향료, 무파라벤. 두피 가려움증 완화', brands: '아토팜, 닥터지 임산부, 무향료 베이비 제품', price: '1-3만원', priority: '권장' },
+        { name: '임산부 페이셜 크림', when: '임신 중', detail: '레티놀, 살리실산 없는 제품. 보습 위주', brands: '비오이리, 마마미오, 임산부 전용', price: '3-7만원', priority: '권장' },
+        { name: '입덧 비스킷/사탕', when: '임신 6-14주', detail: '매실, 생강 캔디. 침대 머리맡에 비치', brands: '드림본 입덧 캔디, 매실 캔디', price: '5천-1만원', priority: '필수 (입덧 심할 때)' },
+        { name: '임산부 마사지 오일', when: '임신 16주 이후', detail: '튼살 예방 마사지용. 호호바, 아몬드 오일', brands: '클라란스 마사지 오일, 비오템 마미', price: '3-5만원', priority: '선택' },
+        { name: '입덧 진정 차', when: '임신 6-14주', detail: '생강차, 페퍼민트차 (소량). 디카페인 확인', brands: '오가닉 임산부 티', price: '1-2만원', priority: '선택' }
+      ]},
+      { category: '👟 신발/외출', items: [
+        { name: '임산부 운동화 (★)', when: '임신 16주 이후', detail: '⭐ 발 부종 + 발 사이즈 변화. 가벼운 쿠션화. 0.5-1 size up', brands: '뉴발란스, 아디다스 클라우드폼, 호카 본디', price: '8-15만원', priority: '필수' },
+        { name: '편한 슬립온/플랫슈즈', when: '임신 후기', detail: '신고 벗기 쉬운 형태. 굽 1-3cm 이내', brands: '크록스, 슬립온', price: '3-8만원', priority: '권장' },
+        { name: '임산부 코트/외투', when: '날씨 따라', detail: '배 가릴 수 있는 A라인 또는 케이프형. 7월 출산이면 가벼운 자켓', brands: '임산부 전용 또는 오버사이즈', price: '10-30만원', priority: '계절별' },
+        { name: '복대/임산부 벨트', when: '임신 후기 (28주+)', detail: '배 무게 지지. 허리 통증 완화. 쌍태아는 일찍 사용', brands: 'Belly Bandit, 청소년 임산부 복대', price: '3-7만원', priority: '권장' }
+      ]},
+      { category: '📱 건강 관리 용품', items: [
+        { name: '체중계 (디지털)', when: '임신 초기부터', detail: '주 1회 체중 측정. 쌍태아 체중 증가 모니터링', brands: '오므론, 샤오미', price: '2-5만원', priority: '필수' },
+        { name: '혈압계 (가정용)', when: '임신 중기 이후', detail: '⭐ 쌍태아 임신중독증 위험 2-3배. 주 1-2회 체크', brands: '오므론 HEM-7156, 시노케어', price: '5-15만원', priority: '필수 (쌍태)' },
+        { name: '임산부 다이어리/수첩', when: '임신 초기부터', detail: '검진 결과, 증상, 체중, 혈압 기록. 산모수첩 별도', brands: '템플릿 다양', price: '1-3만원', priority: '권장' },
+        { name: '도플러 (태아심음기)', when: '임신 16주 이후', detail: '집에서 태아 심음 확인. 안심용. 의료기기 인증 확인', brands: '소니케어 도플러, 안젤소니카', price: '5-15만원', priority: '선택' }
+      ]}
+    ],
+    hospital: [ // 출산가방 (병원/조리원)
+      { category: '🏥 산모용 (병원/조리원)', items: [
+        { name: '산모 안심 팬티 (입는 오버나이트)', when: '34주부터 준비', detail: '출산 후 오로 배출 시 사용. 디팬드 등. 무료 샘플 신청 가능', brands: '디팬드 산모, 한미녹스, 맘스 안심', price: '1-3만원/팩', priority: '필수' },
+        { name: '산모 패드 (오버나이트)', when: '34주부터', detail: '병원에서 일부 제공. 추가 1팩 준비', brands: '디팬드, 라네이쳐, 화이트', price: '1만원/팩', priority: '필수' },
+        { name: '수유 브라/수유 나시', when: '34주부터', detail: '앞이 열리는 형태. 조리원에서 자주 수유 시 필수. 3-4개', brands: '소임, 맘누리, 카네브로 수유 나시', price: '2-3만원/개', priority: '필수' },
+        { name: '수유 패드', when: '34주부터', detail: '브래지어 안에 넣어 모유 새는 것 방지. 일회용+다회용 권장', brands: '필리프, 메디포드', price: '1-2만원/팩', priority: '필수' },
+        { name: '손목 보호대 (★)', when: '34주부터', detail: '⭐ 쌍둥이 안고 수유 시 손목 부담 큼. 양손 모두 권장', brands: '메디큐어 손목보호대, 손목 아대', price: '1-2만원/세트', priority: '필수' },
+        { name: '압박 스타킹', when: '34주부터', detail: '제왕절개 시 필수. 부종, 혈전 예방. 무릎까지', brands: '메디벤, Jobst', price: '2-4만원', priority: '필수' },
+        { name: '산후 복대', when: '34주부터', detail: '제왕절개 시 필수. 자연분만도 도움. 배 회복 지원', brands: 'Belly Bandit, 임산부 복대 전문', price: '3-7만원', priority: '필수' },
+        { name: '튼살 크림 (조리원용 별도)', when: '34주부터', detail: '조리원에서도 매일 사용. 작은 용량 별도', brands: '비오이리, 마마미오', price: '2-3만원', priority: '필수' },
+        { name: '수면 양말, 면 양말', when: '34주부터', detail: '산후 발 시림 예방. 조리원은 따뜻해서 면 양말도 필요', brands: '일반', price: '5천-1만원/켤레', priority: '필수' },
+        { name: '비데 물티슈 (마이비데 등)', when: '34주부터', detail: '회음부/오로 닦을 때. 일반 화장지 자극', brands: '마이비데, 그린핑거', price: '5천-1만원/팩', priority: '필수' },
+        { name: '마데카솔 / 비판텐', when: '34주부터', detail: '회음부 상처(자연분만), 유두 상처(수유 시) 사용', brands: '마데카솔, 비판텐', price: '5천-1만원/개', priority: '필수' },
+        { name: '세면도구 세트', when: '34주부터', detail: '칫솔, 치약, 샴푸, 바디워시, 폼클렌징 (소용량)', brands: '여행용 키트', price: '1-2만원', priority: '필수' },
+        { name: '드라이샴푸', when: '34주부터', detail: '제왕절개 시 며칠 머리 못 감음. 드라이샴푸로 대체', brands: 'BATISTE, 나우식', price: '1-2만원', priority: '권장' },
+        { name: '립밤', when: '34주부터', detail: '병실은 매우 건조. 입술 트는 것 방지', brands: '바세린, EOS', price: '5천원', priority: '필수' },
+        { name: '휴대용 가습기', when: '34주부터', detail: '병실 건조함 완화. USB형 권장', brands: '미니 USB 가습기', price: '2-3만원', priority: '권장' },
+        { name: '주름 빨대', when: '34주부터', detail: '수술 후 누워서 물 마실 때 사용. 다회용', brands: '실리콘 빨대', price: '5천원', priority: '필수' },
+        { name: '신분증, 산모 수첩, 임신확인서', when: '입원 시', detail: '입원 수속에 필수. 결제용 카드 별도', brands: '-', price: '-', priority: '필수' }
+      ]},
+      { category: '👶 신생아용 (쌍둥이 2배 준비!)', items: [
+        { name: '배냇저고리 (5-7장 × 2)', when: '36주부터', detail: '⭐ 쌍둥이는 2배. 면 100%. 신생아 사이즈', brands: '아가방, 압소바, 메리어트, 베베', price: '1-3만원/장', priority: '필수' },
+        { name: '신생아 손싸개/발싸개 (각 3-4장 × 2)', when: '36주부터', detail: '쌍둥이 2배. 면 100%', brands: '아가방, 메리어트', price: '5천-1만원/장', priority: '필수' },
+        { name: '신생아 모자 (2-3개 × 2)', when: '36주부터', detail: '쌍둥이 2배. 면/털모자', brands: '아가방, 메리어트', price: '5천-1만원/개', priority: '필수' },
+        { name: '겉싸개 (속싸개 + 겉싸개) × 2', when: '36주부터', detail: '⭐ 쌍둥이는 2세트. 12월 출산이라 보온 중요', brands: '아가방, 메리어트, 페이지', price: '3-7만원/세트', priority: '필수' },
+        { name: '아기 손톱깎이/가위', when: '36주부터', detail: '신생아용 작은 것. 1개로 공용 가능', brands: '피죤, 컴비', price: '1-2만원', priority: '필수' },
+        { name: '아기 체온계 (귀/이마형)', when: '36주부터', detail: '비접촉 적외선형 권장. 1개로 공용', brands: '브라운, 시노케어', price: '5-10만원', priority: '필수' },
+        { name: '신생아 욕조', when: '36주부터', detail: '미끄럼 방지 매트 포함. 쌍둥이 1개 공용 OK', brands: '한솔, 페어푸드, 컴비', price: '3-7만원', priority: '필수' },
+        { name: '신생아용 바디워시/샴푸', when: '36주부터', detail: '저자극, 눈물 안 매운 제품. 1개 공용', brands: '아토팜, 마미포코, 시카케어', price: '1-2만원', priority: '필수' },
+        { name: '기저귀 (신생아용 × 2팩)', when: '36주부터', detail: '⭐ 쌍둥이는 하루 20-30개 사용. 여유있게', brands: '하기스 매직컴포트, 군기저귀', price: '3-5만원/팩', priority: '필수' },
+        { name: '아기 물티슈 (3-4팩)', when: '36주부터', detail: '쌍둥이 2배. 무향, 무알코올', brands: '베베앙, 좋은느낌', price: '1만원/팩', priority: '필수' },
+        { name: '거즈 손수건 (10-15장 × 2)', when: '36주부터', detail: '⭐ 쌍둥이 수유/트림 시 많이 필요. 면 100%', brands: '아가방, 코니', price: '1-2만원/세트', priority: '필수' },
+        { name: '신생아 옷장/수납함', when: '36주부터', detail: '쌍둥이 옷 정리용. 미리 세탁/정리', brands: '이케아, 한샘', price: '5-15만원', priority: '권장' },
+        { name: '카시트 × 2 (★)', when: '⭐ 출산 전 필수', detail: '⭐ 쌍둥이 카시트 2개. 신생아용 (영아용) 0-13개월. 병원→집 이동 시 법적 필수', brands: '맥시코시 페블, 사이벡스, 다이치', price: '30-50만원/개', priority: '⭐ 필수 (법)' },
+        { name: '유모차 (쌍둥이용) (★)', when: '출산 전 ~ 1개월', detail: '⭐ 쌍둥이 유모차 (가로/세로형). 신생아용 디럭스형', brands: '부가부 도키, 잉글레시나 트윈, 조이 에보 라이트', price: '100-200만원', priority: '필수 (쌍태)' }
+      ]},
+      { category: '🍼 수유/유축 용품', items: [
+        { name: '유축기 (전동) (★)', when: '36주부터 또는 출산 후', detail: '⭐ 쌍둥이는 모유 수유 양 많이 필요. 더블 유축기 권장', brands: '메델라 솔라, 스펙트라, 시므플리스', price: '20-40만원', priority: '필수 (쌍태)' },
+        { name: '젖병 (6-8개)', when: '36주부터', detail: '쌍둥이 2배. 모유 + 분유 겸용 가능형', brands: '필립스 아벤트 내추럴, 닥터브라운, 더블베어', price: '1-2만원/개', priority: '필수' },
+        { name: '젖병 세척솔/세정제', when: '36주부터', detail: '아기 전용 세정제. 잔류물 없는 것', brands: '에코프렌즈, 마미포코', price: '1-2만원', priority: '필수' },
+        { name: '젖병 소독기', when: '36주부터', detail: '스팀 소독기. 쌍둥이는 많이 사용', brands: '필립스 아벤트 4-in-1, 컴비, 큐브웰', price: '10-20만원', priority: '필수 (쌍태)' },
+        { name: '유두 보호기/유두 크림', when: '34주부터', detail: '수유 초기 유두 상처 보호. 란시노 크림 유명', brands: '란시노 라놀린, 메델라 푸렐란', price: '2-3만원', priority: '필수' },
+        { name: '모유 저장팩', when: '출산 후 모유량 확인 후', detail: '유축 모유 냉동 보관용. 100-200매', brands: '메델라, 닥터브라운', price: '2-3만원', priority: '권장' }
+      ]}
+    ],
+    home: [ // 집 준비 (출산 전 ~ 출산 후 신생아)
+      { category: '🛏️ 신생아 침구', items: [
+        { name: '아기 침대 × 1-2 (★)', when: '출산 1개월 전', detail: '⭐ 쌍둥이도 보통 1개 공용 (다른 침대 활용 가능). 옆 안전망 필수', brands: '이케아 스니글라르, 한솔 베이비', price: '15-50만원', priority: '필수' },
+        { name: '아기 매트리스', when: '출산 1개월 전', detail: '딱딱한 매트리스 (질식 위험 방지). 라텍스/메모리폼 X', brands: '이케아, 한솔', price: '10-20만원', priority: '필수' },
+        { name: '방수 매트 (5-7장)', when: '출산 1개월 전', detail: '쌍둥이 자주 갈아야 함. 빨아쓰는 면 방수매트', brands: '바이킹 베이비, 아가방', price: '1-2만원/장', priority: '필수' },
+        { name: '신생아 베개', when: '출산 1개월 전', detail: '6개월 미만은 베개 X (영아돌연사증후군 위험). 단, 짱구베개 가능', brands: '베이비룸', price: '1-3만원', priority: '선택' },
+        { name: '모빌', when: '신생아 2개월부터', detail: '시각 발달. 흑백 → 컬러로 발달 단계별', brands: '치코, 핑크퐁, 손바느질', price: '2-5만원', priority: '권장' }
+      ]},
+      { category: '🍴 수유 환경', items: [
+        { name: '수유 의자/소파', when: '출산 전', detail: '⭐ 쌍둥이 동시 수유 시 팔걸이 넓은 의자 좋음. 등받이 각도 조절', brands: '글라이더, 이케아 포엥, 일반 1인 소파', price: '20-50만원', priority: '권장' },
+        { name: '수유 쿠션/베개', when: '출산 전', detail: '⭐ 쌍둥이 동시 수유 가능한 큰 쿠션 (BFA 쌍둥이 쿠션 등)', brands: 'My Brest Friend Twin, 보보몬스터', price: '5-15만원', priority: '필수 (쌍태)' },
+        { name: '간이 식탁/사이드 테이블', when: '출산 전', detail: '수유 중 물, 간식, 폰 놓을 작은 테이블', brands: '이케아, 한샘', price: '3-7만원', priority: '권장' }
+      ]},
+      { category: '👶 일상 케어', items: [
+        { name: '아기 욕조 + 스탠드', when: '출산 전', detail: '허리 안 굽혀도 되는 스탠드형. 등 보호', brands: '한솔, 페어푸드', price: '5-10만원', priority: '권장' },
+        { name: '신생아용 옷걸이/옷장', when: '출산 1개월 전', detail: '아기 옷 분류용. 작은 옷걸이', brands: '이케아', price: '2-5만원', priority: '권장' },
+        { name: '아기 빨래 세제', when: '출산 1개월 전', detail: '저자극, 무향료. 임신 중 아기 옷 미리 세탁', brands: '베베앙, 비앤비, 아토팜', price: '1-2만원', priority: '필수' },
+        { name: '아기 빨래망', when: '출산 1개월 전', detail: '신생아 옷 별도 세탁용', brands: '일반', price: '5천-1만원', priority: '권장' },
+        { name: '베이비 모니터 (★)', when: '출산 전', detail: '⭐ 쌍둥이는 동시 모니터링 필요. 카메라형 또는 음성형', brands: 'VTech, 모토로라, 카메라형', price: '10-30만원', priority: '필수 (쌍태)' },
+        { name: '공기청정기', when: '출산 전', detail: '신생아 면역 약함. 미세먼지 차단', brands: '삼성 비스포크 큐브, LG 퓨리케어', price: '50-100만원', priority: '권장' },
+        { name: '가습기', when: '출산 전 (겨울 출산)', detail: '⭐ 12월 출산이라 실내 건조. 신생아 호흡기 보호', brands: '미로 가습기, 발뮤다', price: '10-30만원', priority: '필수 (겨울)' },
+        { name: '아기 체온/실내 온습도계', when: '출산 전', detail: '신생아 적정: 20-22도, 습도 50-60%', brands: '브리츠, 샤오미', price: '2-5만원', priority: '필수' }
+      ]},
+      { category: '💼 외출 준비', items: [
+        { name: '기저귀 가방', when: '34주부터', detail: '⭐ 쌍둥이는 큰 사이즈. 배낭형이 양손 자유로움', brands: 'JJ Cole, Skip Hop, 페이지', price: '5-20만원', priority: '필수' },
+        { name: '아기띠 / 슬링 (★)', when: '신생아 ~ 12개월', detail: '⭐ 쌍둥이는 부모 각각 하나씩 권장. 외출 시 아빠 + 엄마', brands: '에르고 베이비, 코니 아기띠, BabyBjorn', price: '10-25만원', priority: '필수 (2개)' },
+        { name: '카시트 보호 시트', when: '카시트 사용 시', detail: '카시트 좌석 보호. 우유 흘림 등 방지', brands: '일반', price: '2-3만원', priority: '권장' }
+      ]}
+    ]
+  };
+
+  const emergencyGuide = {
+    immediate: [
+      { sign: '빨간색 다량 출혈', action: '응급실 즉시', detail: '생리혈 이상. 유산/태반조기박리/자궁외임신' },
+      { sign: '심한 한쪽 복통', action: '응급실 즉시', detail: '자궁외임신 의심' },
+      { sign: '어지러움, 실신', action: '응급실 즉시', detail: '내출혈, 빈혈, 임신중독' },
+      { sign: '38℃ 이상 고열', action: '응급실 즉시', detail: '감염, 융모양막염' },
+      { sign: '심한 두통+시야 흐림', action: '응급실 즉시', detail: '임신중독증 (3분기)' },
+      { sign: '경련, 발작', action: '응급실 즉시', detail: '자간증' },
+      { sign: '양수 파수 (28주 전)', action: '응급실 즉시', detail: '조기양막파수' },
+      { sign: '태동 급감 (28주+)', action: '응급실 즉시', detail: '하루 10회 미만' }
+    ],
+    contact: [
+      { sign: '갈색 분비물 소량', action: '관찰', detail: '대부분 정상. 3일+ 지속 시 병원' },
+      { sign: '점출혈', action: '관찰', detail: '안정, 양 모니터링' },
+      { sign: '가벼운 복부 당김', action: '관찰', detail: '브렉스턴 힉스. 휴식 후 사라지면 정상' },
+      { sign: '경미한 메스꺼움', action: '식이 조절', detail: '소량 다회. 심하면 입덧약' },
+      { sign: '변비, 치질', action: '식이 + 의사', detail: '수분, 섬유질. 자가 약물 X' },
+      { sign: '다리 쥐', action: '마그네슘', detail: '저녁 마그네슘, 스트레칭' }
+    ],
+    hotlines: [
+      { name: '119 응급의료', phone: '119', when: '생명 위급' },
+      { name: '1339 응급상담', phone: '1339', when: '병원 갈지 판단 어려울 때' },
+      { name: '129 보건복지', phone: '129', when: '복지 정책 문의' },
+      { name: '화성 서부보건소 (봉담)', phone: '031-5189-3547', when: '봉담 거주 임산부 지원' },
+      { name: '담당 산부인과', phone: '저장 필요', when: '의료 판단 1순위' }
+    ]
+  };
+
+  const tabs = [
+    { id: 'home', label: '홈', icon: Home },
+    { id: 'calendar', label: '주차별', icon: Calendar },
+    { id: 'nutrition', label: '영양', icon: Apple },
+    { id: 'health', label: '건강', icon: Activity },
+    { id: 'benefits', label: '혜택', icon: Gift },
+    { id: 'products', label: '제품', icon: ShoppingBag }
+  ];
+
+  return (
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #FFF8F3 0%, #F5E6E8 100%)', fontFamily: "'Noto Sans KR', sans-serif" }}>
+      {/* 헤더 */}
+      <header className="sticky top-0 z-50 backdrop-blur-md" style={{ background: 'rgba(255, 248, 243, 0.85)', borderBottom: '1px solid rgba(232, 155, 174, 0.2)' }}>
+        <div className="max-w-2xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: colors.primary }}>
+                <Baby className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-base font-bold" style={{ color: colors.warmGray }}>경민이의 임신 일기</h1>
+                <p className="text-xs" style={{ color: colors.primaryDark }}>봉담 쌍둥이 · 김경민(삼성전자) with 재영 ♡</p>
+              </div>
+            </div>
+            <button onClick={() => setShowEmergency(true)} className="px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1" style={{ background: colors.danger, color: 'white' }}>
+              <Phone className="w-3 h-3" /> SOS
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-2xl mx-auto px-4 pb-24 pt-4">
+
+        {/* === 홈 === */}
+        {activeTab === 'home' && (
+          <div className="space-y-4">
+            <div className="relative overflow-hidden rounded-3xl p-6 shadow-lg" style={{ background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)` }}>
+              <div className="absolute top-2 right-2 opacity-20"><Heart className="w-32 h-32 text-white" /></div>
+              <div className="relative">
+                <p className="text-white/80 text-sm mb-1">현재 임신 주차</p>
+                <h2 className="text-white text-4xl font-bold">{currentWeek.weeks}주 {currentWeek.days}일</h2>
+                <p className="text-white/90 text-sm mt-2">DCDA 쌍태아 · 만 35세 · 화성시 봉담읍</p>
+                <div className="mt-4 pt-4 border-t border-white/20">
+                  <div className="flex justify-between text-white">
+                    <div>
+                      <p className="text-xs opacity-80">출산 예정 (쌍태)</p>
+                      <p className="font-semibold">2026.12.23 (D-{daysToTwin})</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs opacity-80">다음 검진</p>
+                      <p className="font-semibold">5/18 (D-{daysToNextCheckup})</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-bold text-sm" style={{ color: colors.warmGray }}>임신 여정</h3>
+                <span className="text-xs" style={{ color: colors.primaryDark }}>{Math.round((currentWeek.totalDays / 280) * 100)}%</span>
+              </div>
+              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${(currentWeek.totalDays / 280) * 100}%`, background: `linear-gradient(90deg, ${colors.primary}, ${colors.accent})` }} />
+              </div>
+              <div className="flex justify-between text-xs mt-2" style={{ color: colors.warmGray }}>
+                <span>1주</span><span>13주</span><span>27주</span><span>40주</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <Heart className="w-5 h-5 mb-2" style={{ color: colors.primary }} />
+                <p className="text-xs" style={{ color: colors.warmGray }}>두 아기 심박</p>
+                <p className="text-lg font-bold" style={{ color: colors.warmGray }}>5/18 예정</p>
+              </div>
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <TrendingUp className="w-5 h-5 mb-2" style={{ color: colors.secondary }} />
+                <p className="text-xs" style={{ color: colors.warmGray }}>최근 hCG</p>
+                <p className="text-lg font-bold" style={{ color: colors.warmGray }}>720.34</p>
+              </div>
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <Baby className="w-5 h-5 mb-2" style={{ color: colors.accent }} />
+                <p className="text-xs" style={{ color: colors.warmGray }}>출산 도달률</p>
+                <p className="text-lg font-bold" style={{ color: colors.warmGray }}>약 80%</p>
+              </div>
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <MapPin className="w-5 h-5 mb-2" style={{ color: colors.primaryDark }} />
+                <p className="text-xs" style={{ color: colors.warmGray }}>관할 보건소</p>
+                <p className="text-lg font-bold" style={{ color: colors.warmGray }}>서부보건소</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.warmGray }}>
+                <Bell className="w-4 h-4" style={{ color: colors.primary }} /> 이번 주 핵심
+              </h3>
+              <div className="space-y-2.5">
+                {[
+                  '5/18 심박 확인 - 6주 0일, 두 태아 심박 첫 확인',
+                  '입덧 대비 - 6주차부터 본격 시작',
+                  '엽산 1mg - 임신 12주까지 매일',
+                  '국민행복카드 200만원 신청 (쌍태아)',
+                  '화성시 임산부 등록 (봉담읍 행정복지센터)'
+                ].map((tip, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: colors.primary }} />
+                    <p className="text-sm" style={{ color: colors.warmGray }}>{tip}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.warmGray }}>
+                <FileText className="w-4 h-4" style={{ color: colors.primary }} /> 임신 진행 기록
+              </h3>
+              <div className="space-y-2 text-sm">
+                {[
+                  { date: '4/23', text: '3일 배아 3개 이식 (동결)', bold: false },
+                  { date: '5/2', text: '1차 베타 hCG: 271.92', bold: false },
+                  { date: '5/4', text: '2차 베타 hCG: 720.34 (×2.65)', bold: false },
+                  { date: '5/11', text: 'DCDA 쌍태아 확정 ★', bold: true }
+                ].map((r, i) => (
+                  <div key={i} className={`flex justify-between py-1.5 ${i < 3 ? 'border-b border-gray-100' : ''}`}>
+                    <span style={{ color: colors.warmGray }}>{r.date}</span>
+                    <span className={r.bold ? 'font-semibold' : ''} style={{ color: r.bold ? colors.primaryDark : colors.warmGray }}>{r.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === 주차별 === */}
+        {activeTab === 'calendar' && (
+          <div className="space-y-3">
+            <div className="bg-white rounded-2xl p-4 shadow-sm mb-3">
+              <h2 className="font-bold text-lg mb-1" style={{ color: colors.warmGray }}>주차별 임신 플로우</h2>
+              <p className="text-xs" style={{ color: colors.warmGray, opacity: 0.7 }}>DCDA 쌍태아 · 만 35세 보정</p>
+            </div>
+            {weeklyData.map((week) => {
+              const isPast = week.week < currentWeek.weeks;
+              const isCurrent = week.week === currentWeek.weeks;
+              const isExpanded = expandedWeek === week.week;
+              return (
+                <div key={week.week} className="rounded-2xl shadow-sm overflow-hidden" style={{ background: isCurrent ? colors.cream : 'white', border: isCurrent ? `2px solid ${colors.primary}` : 'none' }}>
+                  <button onClick={() => setExpandedWeek(isExpanded ? null : week.week)} className="w-full p-4 flex items-center justify-between text-left">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: isCurrent ? colors.primary : isPast ? colors.soft : '#F5F5F5' }}>
+                        <span className="font-bold text-sm" style={{ color: isCurrent ? 'white' : colors.warmGray }}>{week.week}w</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-sm" style={{ color: colors.warmGray }}>{week.range}</h3>
+                          {week.critical && <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: colors.soft, color: colors.primaryDark }}>핵심</span>}
+                          {isCurrent && <span className="text-xs px-1.5 py-0.5 rounded text-white" style={{ background: colors.primary }}>현재</span>}
+                        </div>
+                        <p className="text-xs mt-0.5" style={{ color: colors.warmGray, opacity: 0.7 }}>{week.date}</p>
+                        <p className="text-xs mt-1 truncate" style={{ color: colors.primaryDark }}>{week.check}</p>
+                      </div>
+                    </div>
+                    {isExpanded ? <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: colors.warmGray }} /> : <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: colors.warmGray }} />}
+                  </button>
+                  {isExpanded && (
+                    <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
+                      <div>
+                        <h4 className="text-xs font-bold mb-1.5 flex items-center gap-1" style={{ color: colors.primary }}><Baby className="w-3 h-3" /> 아기 발달</h4>
+                        <p className="text-sm" style={{ color: colors.warmGray }}>{week.baby}</p>
+                        {week.babyDetail && <p className="text-xs mt-1" style={{ color: colors.warmGray, opacity: 0.7 }}>{week.babyDetail}</p>}
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold mb-1.5 flex items-center gap-1" style={{ color: colors.secondary }}><Heart className="w-3 h-3" /> 엄마 변화</h4>
+                        <p className="text-sm" style={{ color: colors.warmGray }}>{week.mom}</p>
+                        {week.momDetail && <p className="text-xs mt-1" style={{ color: colors.warmGray, opacity: 0.7 }}>{week.momDetail}</p>}
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold mb-1.5" style={{ color: colors.accent }}>주요 증상</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {week.symptoms.map((s, i) => <span key={i} className="text-xs px-2 py-0.5 rounded-full" style={{ background: colors.soft, color: colors.warmGray }}>{s}</span>)}
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                        <div>
+                          <p className="text-xs" style={{ color: colors.warmGray, opacity: 0.7 }}>유산 위험도</p>
+                          <p className="text-sm font-bold" style={{ color: colors.primaryDark }}>{week.risk}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold mb-1.5" style={{ color: colors.primaryDark }}>💡 이번 주 팁</h4>
+                        <ul className="space-y-1">
+                          {week.tips.map((tip, i) => (
+                            <li key={i} className="text-xs flex items-start gap-1.5" style={{ color: colors.warmGray }}>
+                              <span style={{ color: colors.primary }}>•</span>{tip}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* === 영양 === */}
+        {activeTab === 'nutrition' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h2 className="font-bold text-lg mb-1" style={{ color: colors.warmGray }}>쌍태아 식단 가이드</h2>
+              <p className="text-xs" style={{ color: colors.warmGray, opacity: 0.7 }}>일일 +600kcal · 단백질 175g</p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.warmGray }}>
+                <Coffee className="w-4 h-4" style={{ color: colors.primary }} /> 일일 식단 예시
+              </h3>
+              <div className="space-y-3">
+                {dietGuide.daily.map((meal, i) => (
+                  <div key={i} className="p-3 rounded-xl" style={{ background: colors.cream }}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-semibold text-sm" style={{ color: colors.warmGray }}>{meal.meal}</span>
+                      <span className="text-xs" style={{ color: colors.primaryDark }}>{meal.calorie}kcal · {meal.protein}g</span>
+                    </div>
+                    <p className="text-xs" style={{ color: colors.warmGray }}>{meal.items}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 p-3 rounded-xl flex justify-around" style={{ background: colors.soft }}>
+                <div className="text-center"><p className="text-xs" style={{ color: colors.warmGray }}>총 칼로리</p><p className="font-bold" style={{ color: colors.primaryDark }}>{dietGuide.totals.calorie}</p></div>
+                <div className="text-center"><p className="text-xs" style={{ color: colors.warmGray }}>총 단백질</p><p className="font-bold" style={{ color: colors.primaryDark }}>{dietGuide.totals.protein}g</p></div>
+                <div className="text-center"><p className="text-xs" style={{ color: colors.warmGray }}>물</p><p className="font-bold" style={{ color: colors.primaryDark }}>{dietGuide.totals.water}L</p></div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.warmGray }}>
+                <Pill className="w-4 h-4" style={{ color: colors.primary }} /> 영양제 가이드
+              </h3>
+              <div className="space-y-2">
+                {nutrients.map((n, i) => {
+                  const isExp = expandedNutrient === i;
+                  return (
+                    <div key={i} className="rounded-xl overflow-hidden" style={{ background: colors.cream }}>
+                      <button onClick={() => setExpandedNutrient(isExp ? null : i)} className="w-full p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-xs px-1.5 py-0.5 rounded font-bold flex-shrink-0" style={{ background: n.priority === '필수' ? colors.danger : n.priority === '권장' ? colors.accent : colors.soft, color: n.priority === '선택' ? colors.warmGray : 'white' }}>{n.priority}</span>
+                          <span className="font-semibold text-sm" style={{ color: colors.warmGray }}>{n.name}</span>
+                        </div>
+                        {isExp ? <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: colors.warmGray }} /> : <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: colors.warmGray }} />}
+                      </button>
+                      {isExp && (
+                        <div className="px-3 pb-3 space-y-2 text-xs" style={{ color: colors.warmGray }}>
+                          <div className="grid grid-cols-2 gap-2 p-2 rounded-lg bg-white">
+                            <div><strong>복용량:</strong> {n.amount}</div>
+                            <div><strong>시기:</strong> {n.timing}</div>
+                            <div className="col-span-2"><strong>기간:</strong> {n.period}</div>
+                          </div>
+                          <div><strong>역할:</strong> {n.role}</div>
+                          <div><strong>음식:</strong> {n.foods}</div>
+                          <div><strong>주의:</strong> {n.notes}</div>
+                          <div><strong>제품:</strong> {n.brands}</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3" style={{ color: colors.warmGray }}>📋 핵심 규칙</h3>
+              <ul className="space-y-2">
+                {dietGuide.rules.map((rule, i) => (
+                  <li key={i} className="text-sm flex items-start gap-2" style={{ color: colors.warmGray }}>
+                    <span style={{ color: colors.primary }}>✓</span>{rule}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.danger }}>
+                <X className="w-4 h-4" /> 절대 피해야 할 것
+              </h3>
+              <div className="space-y-2">
+                {dietGuide.avoid.map((item, i) => (
+                  <div key={i} className="p-3 rounded-xl" style={{ background: '#FFE5E5' }}>
+                    <p className="font-semibold text-sm" style={{ color: colors.warmGray }}>{item.item}</p>
+                    <p className="text-xs mt-1" style={{ color: colors.warmGray, opacity: 0.7 }}>{item.reason}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === 건강 === */}
+        {activeTab === 'health' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h2 className="font-bold text-lg mb-1" style={{ color: colors.warmGray }}>몸 관리 가이드</h2>
+              <p className="text-xs" style={{ color: colors.warmGray, opacity: 0.7 }}>쌍태아 임신 특화</p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.warmGray }}>
+                <TrendingUp className="w-4 h-4" style={{ color: colors.primary }} /> 체중 관리
+              </h3>
+              <div className="p-3 rounded-xl mb-3" style={{ background: colors.cream }}>
+                <p className="text-sm font-bold mb-1" style={{ color: colors.primaryDark }}>쌍태아 권장 증가: 17-25kg</p>
+                <p className="text-xs" style={{ color: colors.warmGray }}>(단태아 11-16kg 대비 +6-9kg)</p>
+              </div>
+              <div className="space-y-2 text-sm">
+                {[
+                  { p: '1분기 (1-13주)', v: '+1-2kg' },
+                  { p: '2분기 (14-27주)', v: '주 0.5kg' },
+                  { p: '3분기 (28주~)', v: '주 0.5-0.7kg' }
+                ].map((row, i) => (
+                  <div key={i} className="flex justify-between p-2 rounded" style={{ background: colors.cream }}>
+                    <span style={{ color: colors.warmGray }}>{row.p}</span>
+                    <span className="font-semibold" style={{ color: colors.primaryDark }}>{row.v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.warmGray }}>
+                <Dumbbell className="w-4 h-4" style={{ color: colors.secondary }} /> 운동 가이드
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <p className="font-semibold text-sm mb-1" style={{ color: colors.success }}>✓ 추천</p>
+                  <p className="text-sm" style={{ color: colors.warmGray }}>걷기 (20-30분), 임산부 요가, 수영, 스트레칭</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-sm mb-1" style={{ color: colors.danger }}>✗ 금지</p>
+                  <p className="text-sm" style={{ color: colors.warmGray }}>달리기, 점프, 헬스, 복근, 사우나, 등산, 자전거</p>
+                </div>
+                <div className="p-3 rounded-xl" style={{ background: colors.soft }}>
+                  <p className="text-xs" style={{ color: colors.warmGray }}><strong>쌍태아 주의:</strong> 24주 이후 격렬 활동 자제. 의사 상담 후 강도 결정.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.warmGray }}>
+                <Moon className="w-4 h-4" style={{ color: colors.primaryDark }} /> 수면 관리
+              </h3>
+              <div className="space-y-2 text-sm" style={{ color: colors.warmGray }}>
+                <p><strong>시간:</strong> 일일 8-9시간</p>
+                <p><strong>자세 (20주+):</strong> <span style={{ color: colors.primaryDark }}>왼쪽으로 누워자기</span></p>
+                <p><strong>도구:</strong> 임산부 바디필로우</p>
+                <p><strong>주의:</strong> 등 대고 X, 엎드려 X</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.warmGray }}>
+                <Shield className="w-4 h-4" style={{ color: colors.danger }} /> 쌍태아 위험 합병증
+              </h3>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr style={{ background: colors.cream }}>
+                    <th className="text-left p-2" style={{ color: colors.warmGray }}>합병증</th>
+                    <th className="text-center p-2" style={{ color: colors.warmGray }}>단태</th>
+                    <th className="text-center p-2" style={{ color: colors.primaryDark }}>쌍태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { name: '임신성 당뇨', s: '5-10%', t: '15-20%' },
+                    { name: '임신중독증', s: '5-8%', t: '15-20%' },
+                    { name: '빈혈', s: '20%', t: '40%' },
+                    { name: '조산 (37주 전)', s: '10%', t: '50-60%' }
+                  ].map((row, i) => (
+                    <tr key={i} className={i < 3 ? 'border-b border-gray-100' : ''}>
+                      <td className="p-2" style={{ color: colors.warmGray }}>{row.name}</td>
+                      <td className="text-center p-2" style={{ color: colors.warmGray }}>{row.s}</td>
+                      <td className="text-center p-2 font-bold" style={{ color: colors.danger }}>{row.t}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3" style={{ color: colors.warmGray }}>📅 주요 검진 일정</h3>
+              <div className="space-y-2 text-sm">
+                {[
+                  { date: '5/18', label: '6주 - 심박 확인' },
+                  { date: '5/25-6/1', label: '7주 - 심박 안정화' },
+                  { date: '6월 중순', label: '10주 - NIPT 가능' },
+                  { date: '6/22-7/8', label: '11-13주 - NT 검사' },
+                  { date: '7월 말', label: '15-18주 - 2차 기형아' },
+                  { date: '8월 말', label: '20주 - 정밀 초음파' },
+                  { date: '9월 말', label: '24주 - 임신성 당뇨' },
+                  { date: '10월', label: '28주 - 자궁경부 측정' },
+                  { date: '11월~', label: '32주~ - 격주' },
+                  { date: '12월 중순~', label: '36주~ - 매주, 출산' }
+                ].map((item, i) => (
+                  <div key={i} className="flex justify-between p-2 rounded" style={{ background: i % 2 === 0 ? colors.cream : 'white' }}>
+                    <span className="font-semibold" style={{ color: colors.primaryDark }}>{item.date}</span>
+                    <span style={{ color: colors.warmGray }}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === 혜택 === */}
+        {activeTab === 'benefits' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h2 className="font-bold text-lg mb-1" style={{ color: colors.warmGray }}>국가 + 지역 혜택</h2>
+              <p className="text-xs" style={{ color: colors.warmGray, opacity: 0.7 }}>2026년 · 화성시 봉담읍 · 쌍태아 최적화</p>
+            </div>
+
+            <div className="rounded-2xl p-5 shadow-md" style={{ background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)` }}>
+              <p className="text-white/80 text-xs mb-1">쌍둥이 임신·출산 1년차 총 지원 (검증)</p>
+              <p className="text-white text-3xl font-bold">약 4,000만원+</p>
+              <div className="mt-4 space-y-1.5 text-white text-sm">
+                <div className="flex justify-between"><span>국가 지원 (현금성)</span><span className="font-bold">~3,400만원</span></div>
+                <div className="flex justify-between"><span>경기도 + 화성시</span><span className="font-bold">+450만원</span></div>
+                <div className="flex justify-between"><span>삼성전자 사내</span><span className="font-bold">+α</span></div>
+                <p className="text-xs opacity-80 mt-2">+ 출산휴가급여, 육아휴직급여, 사내 어린이집 별도</p>
+              </div>
+            </div>
+
+            {/* 카테고리 탭 */}
+            <div className="flex gap-1.5 bg-white rounded-2xl p-1.5 shadow-sm">
+              <button onClick={() => setBenefitCategory('national')} className="flex-1 py-2 rounded-xl text-xs font-semibold transition" style={{ background: benefitCategory === 'national' ? colors.primary : 'transparent', color: benefitCategory === 'national' ? 'white' : colors.warmGray }}>
+                🇰🇷 국가 (23)
+              </button>
+              <button onClick={() => setBenefitCategory('local')} className="flex-1 py-2 rounded-xl text-xs font-semibold transition" style={{ background: benefitCategory === 'local' ? colors.primary : 'transparent', color: benefitCategory === 'local' ? 'white' : colors.warmGray }}>
+                🏘️ 봉담 (12)
+              </button>
+              <button onClick={() => setBenefitCategory('samsung')} className="flex-1 py-2 rounded-xl text-xs font-semibold transition" style={{ background: benefitCategory === 'samsung' ? '#1428A0' : 'transparent', color: benefitCategory === 'samsung' ? 'white' : colors.warmGray }}>
+                🏢 삼성 (16)
+              </button>
+            </div>
+
+            <div className="bg-white rounded-2xl p-3 shadow-sm" style={{ background: '#FEF3C7' }}>
+              <p className="text-xs flex items-start gap-2" style={{ color: '#92400E' }}>
+                <span className="flex-shrink-0">✓</span>
+                <span><strong>검증 완료:</strong> 보건복지부, NHIS, 화성시청, 삼성전자 공식 자료 직접 확인. ✓ = 공식 자료 / ⚠ = 사내 추가 확인 필요</span>
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {(benefitCategory === 'national' ? nationalBenefits : benefitCategory === 'local' ? localBenefits : samsungBenefits).map((b, i) => {
+                const isExp = expandedBenefit === `${benefitCategory}-${i}`;
+                const isVerified = b.source && b.source.startsWith('✓');
+                return (
+                  <div key={i} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                    <button onClick={() => setExpandedBenefit(isExp ? null : `${benefitCategory}-${i}`)} className="w-full p-4 text-left">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <h3 className="font-bold text-sm" style={{ color: colors.warmGray }}>{b.name}</h3>
+                            {b.source && (isVerified ? <span className="text-xs font-bold" style={{ color: '#10B981' }}>✓</span> : <span className="text-xs font-bold" style={{ color: '#F59E0B' }}>⚠</span>)}
+                          </div>
+                          <p className="text-xs" style={{ color: colors.warmGray, opacity: 0.7 }}>{b.when}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-bold text-sm" style={{ color: benefitCategory === 'samsung' ? '#1428A0' : colors.primaryDark }}>{b.amount}</p>
+                          {isExp ? <ChevronDown className="w-4 h-4 ml-auto mt-1" style={{ color: colors.warmGray }} /> : <ChevronRight className="w-4 h-4 ml-auto mt-1" style={{ color: colors.warmGray }} />}
+                        </div>
+                      </div>
+                    </button>
+                    {isExp && (
+                      <div className="px-4 pb-4 space-y-2 text-xs border-t border-gray-100 pt-3" style={{ color: colors.warmGray }}>
+                        <div><strong>📋 내용:</strong> {b.detail}</div>
+                        <div><strong>🎯 신청:</strong> {b.how}</div>
+                        <div><strong>📍 장소:</strong> {b.where}</div>
+                        <div><strong>💳 사용처:</strong> {b.usage}</div>
+                        <div><strong>⏰ 마감:</strong> {b.deadline}</div>
+                        {b.contact && <div><strong>📞 연락처:</strong> {b.contact}</div>}
+                        <div className="p-2 rounded mt-2" style={{ background: colors.cream }}>
+                          <strong style={{ color: colors.primaryDark }}>💡 팁:</strong> {b.tip}
+                        </div>
+                        {b.source && (
+                          <div className="p-2 rounded text-xs" style={{ background: isVerified ? '#E8F5E9' : '#FFF3E0' }}>
+                            <strong>출처:</strong> {b.source}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 🎯 부부 육아휴직 최적 전략 */}
+            <div className="rounded-2xl p-5 shadow-md" style={{ background: 'linear-gradient(135deg, #FFF8F3 0%, #F5E6E8 100%)', border: `2px solid ${colors.primary}` }}>
+              <h3 className="font-bold mb-1 flex items-center gap-2" style={{ color: colors.primaryDark }}>
+                <Sparkles className="w-5 h-5" /> 부부 육아휴직 풀 활용 전략
+              </h3>
+              <p className="text-xs mb-3" style={{ color: colors.warmGray, opacity: 0.8 }}>
+                6+6 부모육아휴직제 + 1.5년 연장 + 삼성전자 사내 추가 휴직 모두 활용
+              </p>
+
+              {/* 전제 조건 */}
+              <div className="p-3 rounded-xl mb-3" style={{ background: 'white' }}>
+                <p className="text-xs font-bold mb-2" style={{ color: colors.warmGray }}>📌 전제 조건</p>
+                <ul className="text-xs space-y-1" style={{ color: colors.warmGray }}>
+                  <li>• <strong>김경민 (엄마)</strong>: 삼성전자 임직원 → 사내 추가 1.5년 가능</li>
+                  <li>• <strong>이재영 (아빠)</strong>: 일반 회사 임직원 → 법정 1년/1.5년만 적용</li>
+                  <li>• 출산일 2026.12.23 (DCDA 쌍태아) 가정</li>
+                  <li>• 생후 18개월 = 2028.6.23까지 (6+6 적용 기간)</li>
+                </ul>
+              </div>
+
+              {/* 시나리오 A: 추천 */}
+              <div className="p-3 rounded-xl mb-3" style={{ background: 'white', border: `1px solid ${colors.primary}` }}>
+                <p className="text-xs font-bold mb-2 flex items-center gap-1" style={{ color: colors.primaryDark }}>
+                  🌟 시나리오 A: 부부 동시 6+6 (수령액 최대)
+                </p>
+                <div className="space-y-2 text-xs" style={{ color: colors.warmGray }}>
+                  <div className="p-2 rounded" style={{ background: colors.cream }}>
+                    <strong>1단계: 2026.12 ~ 2027.4</strong> (출산휴가)<br />
+                    • 김경민: 출산휴가 120일 (쌍태아) - 상한 월 220만원<br />
+                    • 이재영: 배우자 출산휴가 20일 - 상한 168만원
+                  </div>
+                  <div className="p-2 rounded" style={{ background: colors.cream }}>
+                    <strong>2단계: 2027.5 ~ 2027.10</strong> (6+6 첫 6개월 동시)<br />
+                    • 부부 동시 육아휴직<br />
+                    • 1→2→3→4→5→6개월 상한: 250→250→300→350→400→450만원<br />
+                    • <strong style={{ color: colors.primaryDark }}>각자 약 1,950만원 = 부부 합산 약 3,900만원</strong>
+                  </div>
+                  <div className="p-2 rounded" style={{ background: colors.cream }}>
+                    <strong>3단계: 2027.11 ~ 2028.4</strong> (김경민 단독 6개월)<br />
+                    • 김경민 일반 육아휴직 7-12개월차<br />
+                    • 통상임금 80%, 월 상한 160만원<br />
+                    • <strong style={{ color: colors.primaryDark }}>약 960만원</strong>
+                  </div>
+                  <div className="p-2 rounded" style={{ background: colors.cream }}>
+                    <strong>4단계: 2028.5 ~ 2028.10</strong> (1.5년 연장 6개월)<br />
+                    • 부부 각자 3개월 이상 사용 충족 → 김경민 추가 6개월 권리 발생<br />
+                    • 추가 6개월 급여: 월 상한 160만원<br />
+                    • <strong style={{ color: colors.primaryDark }}>약 960만원</strong>
+                  </div>
+                  <div className="p-2 rounded" style={{ background: '#FEF3C7' }}>
+                    <strong>5단계 (선택): 2028.11 ~ 2030.4</strong> (삼성 사내 추가 1.5년)<br />
+                    • 김경민만 가능 (삼성전자 사내 정책)<br />
+                    • 사내 추가 기간 급여는 인사팀 확인 필수<br />
+                    • <strong style={{ color: '#92400E' }}>김경민 자녀당 최대 2.5년 활용</strong>
+                  </div>
+                </div>
+                <div className="mt-3 p-2 rounded" style={{ background: colors.primary, color: 'white' }}>
+                  <p className="text-xs font-bold">💰 시나리오 A 부부 합산 육아휴직 급여</p>
+                  <p className="text-sm font-bold mt-1">약 6,800만원 (법정 급여 한도 적용 시)</p>
+                  <p className="text-xs opacity-80 mt-1">+ 출산휴가급여 별도 + 삼성 사내 추가 기간 별도</p>
+                </div>
+              </div>
+
+              {/* 시나리오 B */}
+              <div className="p-3 rounded-xl mb-3" style={{ background: 'white' }}>
+                <p className="text-xs font-bold mb-2" style={{ color: colors.warmGray }}>
+                  📋 시나리오 B: 순차 사용 (수입 분산)
+                </p>
+                <div className="space-y-1.5 text-xs" style={{ color: colors.warmGray }}>
+                  <div>• 2026.12 ~ 2027.4: 김경민 출산휴가 + 이재영 배우자 휴가</div>
+                  <div>• 2027.5 ~ 2028.4 (12개월): <strong>김경민 단독</strong> 육아휴직 1년</div>
+                  <div>• 2028.5 ~ 2028.10 (6개월): <strong>이재영 단독</strong> 6개월</div>
+                  <div className="text-xs mt-1" style={{ color: colors.danger }}>
+                    ⚠ 이재영 시작 시점 자녀 17개월 → 6+6 가능. 단, 1.5년 연장은 양쪽 3개월+ 충족 시점에 따라 결정
+                  </div>
+                </div>
+                <div className="mt-2 p-2 rounded" style={{ background: colors.soft, color: colors.warmGray }}>
+                  <p className="text-xs"><strong>장점</strong>: 부부가 번갈아 일해 수입 안정성 유지</p>
+                  <p className="text-xs"><strong>단점</strong>: 6+6 적용 시점 빠듯, 1.5년 연장 시점 계산 필요</p>
+                </div>
+              </div>
+
+              {/* 시나리오 C */}
+              <div className="p-3 rounded-xl mb-3" style={{ background: 'white' }}>
+                <p className="text-xs font-bold mb-2" style={{ color: colors.warmGray }}>
+                  📋 시나리오 C: 분할 사용 (유연성 최대)
+                </p>
+                <div className="space-y-1.5 text-xs" style={{ color: colors.warmGray }}>
+                  <div>• 2027.5 ~ 2027.10 (6개월): 김경민 1차 휴직</div>
+                  <div>• 2027.11 ~ 2028.4 (6개월): 이재영 6개월 휴직 (6+6 적용)</div>
+                  <div>• 2028.5 ~ 2028.10 (6개월): 김경민 2차 휴직 + 1.5년 연장 활용</div>
+                  <div className="text-xs mt-1" style={{ color: colors.primary }}>
+                    ✓ 분할 사용 최대 3회 (총 4기간) 가능
+                  </div>
+                </div>
+              </div>
+
+              {/* 핵심 체크리스트 */}
+              <div className="p-3 rounded-xl" style={{ background: 'white' }}>
+                <p className="text-xs font-bold mb-2" style={{ color: colors.primaryDark }}>✅ 풀 활용 체크리스트</p>
+                <ul className="text-xs space-y-1.5" style={{ color: colors.warmGray }}>
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: colors.success }} />
+                    <span><strong>6+6 적용</strong>: 부부 모두 자녀 생후 18개월 이내 휴직 시작 (2028.6.23까지)</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: colors.success }} />
+                    <span><strong>1.5년 연장</strong>: 부부 각자 같은 자녀에 3개월 이상 사용 → 각자 6개월 추가 권리</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: colors.success }} />
+                    <span><strong>삼성 사내 추가</strong>: 김경민만 자녀당 최대 2.5년 가능 (법정 1.5년 + 사내 1년 추가)</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: colors.success }} />
+                    <span><strong>분할 사용</strong>: 최대 3회 분할 (총 4기간) 가능. 휴직 사이 복직도 가능</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: colors.success }} />
+                    <span><strong>사후지급금 폐지</strong>(2025.1~): 휴직 중 급여 전액 즉시 지급</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: colors.success }} />
+                    <span><strong>매월 신청</strong>: 고용24(work24.go.kr)에서 매월 신청 필수 (다음 달 말일까지)</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* 핵심 주의사항 */}
+              <div className="p-3 rounded-xl mt-3" style={{ background: '#FFE5E5' }}>
+                <p className="text-xs font-bold mb-2" style={{ color: colors.danger }}>⚠️ 핵심 주의사항</p>
+                <ul className="text-xs space-y-1" style={{ color: colors.warmGray }}>
+                  <li>• <strong>이재영 회사 정책 확인 필수</strong>: 일반 회사도 고용보험 가입 시 법정 혜택 동일 적용. 단, 사내 추가 정책은 회사별 상이</li>
+                  <li>• <strong>이재영이 6+6 적용 받으려면</strong>: 고용보험 피보험단위기간 180일 이상 필수</li>
+                  <li>• <strong>1.5년 연장 신청</strong>: 추가 6개월 시작 30일 전에 배우자 3개월 사용 증빙 제출</li>
+                  <li>• <strong>쌍둥이 적용</strong>: 법령상 "같은 자녀" 기준이라 쌍둥이 자동 2배 적용은 아님. 고용센터(1350) 직접 문의 권장</li>
+                  <li>• <strong>삼성 사내 추가</strong>: 김경민 인사팀에 쌍둥이 케이스 정확한 사내 정책 확인 필수</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3" style={{ color: colors.warmGray }}>🎯 시기별 신청 순서</h3>
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl" style={{ background: colors.cream }}>
+                  <p className="font-semibold text-sm" style={{ color: colors.primaryDark }}>① 임신 확인 즉시 (지금!)</p>
+                  <ul className="text-xs mt-1 space-y-1" style={{ color: colors.warmGray }}>
+                    <li>• 국민행복카드 신청 (쌍태 200만원, 자동 합산)</li>
+                    <li>• 봉담읍 행정복지센터 임산부 등록 → 주차증, 배지</li>
+                    <li>• 서부보건소 영양플러스 신청 (소득 해당 시)</li>
+                    <li>• 경기도 사이버도서관 가입 (도서 택배)</li>
+                    <li>• KTX/SRT 임산부 등록</li>
+                    <li>• <strong>삼성전자 인사팀에 임신 통보</strong> (사내 혜택 시작)</li>
+                  </ul>
+                </div>
+                <div className="p-3 rounded-xl" style={{ background: colors.cream }}>
+                  <p className="font-semibold text-sm" style={{ color: colors.primaryDark }}>② 출산 30-40일 전</p>
+                  <ul className="text-xs mt-1 space-y-1" style={{ color: colors.warmGray }}>
+                    <li>• 산후도우미 신청 (서부보건소) - 쌍태아 폭주</li>
+                    <li>• 회사 출산휴가 신청 (쌍태 120일)</li>
+                    <li>• 남편 배우자 출산휴가 (20일) 신청</li>
+                    <li>• <strong>삼성전자 사내 어린이집 대기 신청</strong></li>
+                  </ul>
+                </div>
+                <div className="p-3 rounded-xl" style={{ background: colors.cream }}>
+                  <p className="font-semibold text-sm" style={{ color: colors.primaryDark }}>③ 출산 후 60일 이내</p>
+                  <ul className="text-xs mt-1 space-y-1" style={{ color: colors.warmGray }}>
+                    <li>• 출생신고 (봉담읍 행정복지센터)</li>
+                    <li>• 행복출산 원스톱 - 첫만남(500), 부모급여(월 200), 아동수당(월 20)</li>
+                    <li>• 화성시 출산지원금 (300만원)</li>
+                    <li>• 경기도 산후조리비 (100만원 지역화폐)</li>
+                    <li>• 맘애좋은 + 경기 I-Plus 카드</li>
+                    <li>• <strong>삼성전자 출산경조금 신청 + 6+6 부모육아휴직제 검토</strong></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.warmGray }}>
+                <MapPin className="w-4 h-4" style={{ color: colors.primary }} /> 봉담읍 주요 연락처
+              </h3>
+              <div className="space-y-2 text-sm">
+                {[
+                  { name: '봉담읍 행정복지센터', phone: '031-5189-9000', label: '주민 행정' },
+                  { name: '화성시 서부보건소', phone: '031-5189-6267', label: '임산부/영양/건강' },
+                  { name: '화성시효행구 돌봄복지과', phone: '031-5189-7652', label: '출산지원금' },
+                  { name: '서부보건소 영양플러스', phone: '031-5189-3557', label: '영양 지원' },
+                  { name: '서부보건소 (고위험)', phone: '031-5189-3547', label: '고위험 임산부' },
+                  { name: '화성시청', phone: '031-5189-1000', label: '시 전체' }
+                ].map((c, i) => (
+                  <div key={i} className="flex justify-between items-center p-2 rounded" style={{ background: i % 2 === 0 ? colors.cream : 'white' }}>
+                    <div>
+                      <p className="font-semibold text-sm" style={{ color: colors.warmGray }}>{c.name}</p>
+                      <p className="text-xs" style={{ color: colors.warmGray, opacity: 0.7 }}>{c.label}</p>
+                    </div>
+                    <a href={`tel:${c.phone}`} className="text-xs font-bold px-2 py-1 rounded" style={{ background: colors.primary, color: 'white' }}>{c.phone}</a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === 제품 === */}
+        {activeTab === 'products' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h2 className="font-bold text-lg mb-1" style={{ color: colors.warmGray }}>임산부 필수 제품</h2>
+              <p className="text-xs" style={{ color: colors.warmGray, opacity: 0.7 }}>쌍태아 특화 · 시기별 구매 가이드</p>
+            </div>
+
+            {/* 카테고리 선택 */}
+            <div className="flex gap-1.5 bg-white rounded-2xl p-1.5 shadow-sm">
+              {[
+                { id: 'now', label: '🤰 지금~출산', desc: '본인 사용' },
+                { id: 'hospital', label: '🏥 출산가방', desc: '34주부터' },
+                { id: 'home', label: '🏠 집 준비', desc: '신생아 환경' }
+              ].map(c => (
+                <button key={c.id} onClick={() => setProductCategory(c.id)} className="flex-1 py-2 rounded-xl text-xs font-semibold transition" 
+                        style={{ background: productCategory === c.id ? colors.primary : 'transparent', color: productCategory === c.id ? 'white' : colors.warmGray }}>
+                  <div>{c.label}</div>
+                  <div className="text-xs opacity-70 mt-0.5">{c.desc}</div>
+                </button>
+              ))}
+            </div>
+
+            {/* 시기별 안내 메시지 */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm" style={{ background: colors.cream }}>
+              {productCategory === 'now' && (
+                <p className="text-xs" style={{ color: colors.warmGray }}>
+                  <strong>📌 지금~출산까지 (5주~38주)</strong><br />
+                  본인이 입고/사용할 제품들. 임부복, 수면용품, 스킨케어 등. 시기별로 차근차근 구매하세요.
+                </p>
+              )}
+              {productCategory === 'hospital' && (
+                <p className="text-xs" style={{ color: colors.warmGray }}>
+                  <strong>📌 출산가방 (34주부터 준비)</strong><br />
+                  병원과 조리원에서 사용할 산모용품 + 신생아 용품 (쌍둥이는 2배!). 34주부터 짐 싸기 시작.
+                </p>
+              )}
+              {productCategory === 'home' && (
+                <p className="text-xs" style={{ color: colors.warmGray }}>
+                  <strong>📌 집 준비 (출산 1개월 전)</strong><br />
+                  신생아가 집에 오면 필요한 환경. 침대, 수유 환경, 가전제품 등. 미리 세팅해두면 편함.
+                </p>
+              )}
+            </div>
+
+            {products[productCategory].map((category, catIdx) => (
+              <div key={catIdx} className="bg-white rounded-2xl p-5 shadow-sm">
+                <h3 className="font-bold mb-3" style={{ color: colors.warmGray }}>{category.category}</h3>
+                <div className="space-y-2">
+                  {category.items.map((item, i) => {
+                    const itemKey = `${productCategory}-${catIdx}-${i}`;
+                    const isExp = expandedProduct === itemKey;
+                    return (
+                      <div key={i} className="rounded-xl overflow-hidden" style={{ background: colors.cream }}>
+                        <button onClick={() => setExpandedProduct(isExp ? null : itemKey)} className="w-full p-3 text-left">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 min-w-0 pr-2">
+                              <h4 className="font-semibold text-sm" style={{ color: colors.warmGray }}>{item.name}</h4>
+                              <p className="text-xs mt-0.5" style={{ color: colors.warmGray, opacity: 0.7 }}>{item.when}</p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                              <span className="text-xs px-2 py-0.5 rounded font-bold" 
+                                    style={{ 
+                                      background: item.priority.includes('필수') ? colors.danger : item.priority === '권장' ? colors.accent : colors.soft,
+                                      color: item.priority === '선택' || item.priority === '계절별' ? colors.warmGray : 'white'
+                                    }}>
+                                {item.priority}
+                              </span>
+                              <span className="text-xs font-semibold" style={{ color: colors.primaryDark }}>{item.price}</span>
+                            </div>
+                          </div>
+                        </button>
+                        {isExp && (
+                          <div className="px-3 pb-3 space-y-1 text-xs" style={{ color: colors.warmGray }}>
+                            <div className="p-2 rounded bg-white">
+                              <strong>📝 상세:</strong> {item.detail}
+                            </div>
+                            <div className="p-2 rounded bg-white">
+                              <strong>🏷️ 추천 브랜드:</strong> {item.brands}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* 쌍둥이 특별 팁 */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.warmGray }}>
+                <Sparkles className="w-4 h-4" style={{ color: colors.primary }} /> 쌍둥이 구매 꿀팁
+              </h3>
+              <ul className="space-y-2 text-sm" style={{ color: colors.warmGray }}>
+                <li className="flex items-start gap-2"><span style={{ color: colors.primary }}>1.</span>옷, 기저귀, 손수건은 <strong>2배 준비</strong>. 카시트 2개는 필수 (법)</li>
+                <li className="flex items-start gap-2"><span style={{ color: colors.primary }}>2.</span>아기침대, 욕조, 모니터는 <strong>1개로 공용</strong> 가능</li>
+                <li className="flex items-start gap-2"><span style={{ color: colors.primary }}>3.</span>중고시장 활용 (당근, 헬로마켓) - 쌍둥이 용품 신규 비용 부담 큼</li>
+                <li className="flex items-start gap-2"><span style={{ color: colors.primary }}>4.</span>화성시 장난감도서관 활용 (저렴한 대여)</li>
+                <li className="flex items-start gap-2"><span style={{ color: colors.primary }}>5.</span>유축기는 <strong>대여 가능</strong> (메델라, 스펙트라 의료기관 대여)</li>
+                <li className="flex items-start gap-2"><span style={{ color: colors.primary }}>6.</span>옷은 0-3개월 사이즈 너무 많이 X. 빨리 큼. 사이즈별 분산 구매</li>
+                <li className="flex items-start gap-2"><span style={{ color: colors.primary }}>7.</span>조리원/병원 제공품 미리 확인 후 구매 결정</li>
+                <li className="flex items-start gap-2"><span style={{ color: colors.primary }}>8.</span>국민행복카드 200만원 + 첫만남이용권 500만원 활용</li>
+              </ul>
+            </div>
+
+            {/* 추천 쇼핑 채널 */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold mb-3" style={{ color: colors.warmGray }}>🛒 추천 쇼핑 채널</h3>
+              <div className="space-y-2 text-sm">
+                {[
+                  { name: '소임 (soim.co.kr)', desc: '대표 임부복/수유복 쇼핑몰', cat: '의류' },
+                  { name: '맘누리 (momnuri.com)', desc: '임부복 1등 쇼핑몰', cat: '의류' },
+                  { name: '해피텐 (happy10.co.kr)', desc: '임산부 원피스/팬츠', cat: '의류' },
+                  { name: '아가방', desc: '신생아 의류/용품 1위', cat: '신생아' },
+                  { name: '메리어트, 압소바', desc: '신생아 의류 인기', cat: '신생아' },
+                  { name: '쿠팡 로켓배송', desc: '기저귀, 물티슈 빠른 배송', cat: '일상' },
+                  { name: '당근마켓, 헬로마켓', desc: '중고 거래 - 카시트, 유모차 등 큰 용품', cat: '중고' },
+                  { name: '아이허브', desc: '영양제 (솔가, 나우푸드 직구)', cat: '영양제' },
+                  { name: '11번가 임산부 카테고리', desc: '임산부 전용 할인', cat: '종합' }
+                ].map((s, i) => (
+                  <div key={i} className="p-3 rounded-xl flex justify-between items-center" style={{ background: colors.cream }}>
+                    <div>
+                      <p className="font-semibold text-sm" style={{ color: colors.warmGray }}>{s.name}</p>
+                      <p className="text-xs mt-0.5" style={{ color: colors.warmGray, opacity: 0.7 }}>{s.desc}</p>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded" style={{ background: colors.soft, color: colors.primaryDark }}>{s.cat}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* 응급 모달 */}
+      {showEmergency && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setShowEmergency(false)}>
+          <div className="bg-white w-full max-w-2xl rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold text-xl" style={{ color: colors.danger }}>🚨 응급 가이드</h2>
+              <button onClick={() => setShowEmergency(false)}>
+                <X className="w-5 h-5" style={{ color: colors.warmGray }} />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <h3 className="font-bold text-sm mb-2" style={{ color: colors.danger }}>즉시 응급실 신호</h3>
+              <div className="space-y-1.5">
+                {emergencyGuide.immediate.map((item, i) => (
+                  <div key={i} className="p-2 rounded text-xs" style={{ background: '#FFE5E5' }}>
+                    <p className="font-semibold" style={{ color: colors.warmGray }}>⚠️ {item.sign}</p>
+                    <p className="mt-0.5 opacity-70" style={{ color: colors.warmGray }}>{item.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h3 className="font-bold text-sm mb-2" style={{ color: colors.accent }}>📞 관찰/병원 연락</h3>
+              <div className="space-y-1.5">
+                {emergencyGuide.contact.map((item, i) => (
+                  <div key={i} className="p-2 rounded text-xs flex justify-between" style={{ background: colors.cream }}>
+                    <span style={{ color: colors.warmGray }}>{item.sign}</span>
+                    <span className="font-semibold" style={{ color: colors.primaryDark }}>{item.action}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <h3 className="font-bold text-sm mb-2" style={{ color: colors.warmGray }}>📞 비상 연락처</h3>
+            <div className="space-y-2">
+              {emergencyGuide.hotlines.map((h, i) => (
+                <a key={i} href={`tel:${h.phone}`} className="block p-3 rounded-xl" style={{ background: i === 0 ? colors.danger : colors.cream, color: i === 0 ? 'white' : colors.warmGray }}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-sm">{h.name}</p>
+                      <p className="text-xs opacity-80 mt-0.5">{h.when}</p>
+                    </div>
+                    <span className="font-bold">{h.phone}</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 하단 탭 */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 backdrop-blur-md" style={{ background: 'rgba(255, 248, 243, 0.95)', borderTop: '1px solid rgba(232, 155, 174, 0.2)' }}>
+        <div className="max-w-2xl mx-auto px-2 py-2 flex justify-around">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className="flex flex-col items-center py-1 px-2 rounded-xl transition" 
+                      style={{ background: isActive ? colors.soft : 'transparent' }}>
+                <Icon className="w-5 h-5 mb-0.5" style={{ color: isActive ? colors.primaryDark : colors.warmGray, opacity: isActive ? 1 : 0.5 }} />
+                <span className="text-xs font-semibold" style={{ color: isActive ? colors.primaryDark : colors.warmGray, opacity: isActive ? 1 : 0.5 }}>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    </div>
+  );
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<PregnancySuperApp />);
+    </script>
+</body>
+</html>
