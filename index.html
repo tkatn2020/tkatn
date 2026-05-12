@@ -61,7 +61,7 @@ import { createRoot } from 'react-dom/client';
 import { Heart, Calendar, Apple, Activity, Gift, AlertCircle, Baby, ChevronRight, ChevronDown, Clock, MapPin, Phone, Pill, Coffee, Moon, Dumbbell, Shield, FileText, Sparkles, TrendingUp, Bell, Home, Book, X, ShoppingBag, Shirt, Package, ExternalLink, CheckCircle2 } from 'lucide-react';
 
 const TRANSFER_DATE = new Date('2026-04-23');
-const TODAY = new Date('2026-05-11');
+const TODAY = new Date(); // 실시간 현재 날짜 자동 적용
 const DUE_DATE_TWIN = new Date('2026-12-23');
 
 const getDaysBetween = (date1, date2) => Math.floor((date2 - date1) / (1000 * 60 * 60 * 24));
@@ -79,10 +79,88 @@ function PregnancySuperApp() {
   const [productCategory, setProductCategory] = useState('now');
   const [benefitCategory, setBenefitCategory] = useState('national');
   const [showEmergency, setShowEmergency] = useState(false);
+  
+  // 🔧 수정 기능: localStorage 영구 저장
+  const STORAGE_KEY = 'pregnancyAppData_v1';
+  const loadData = () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) { console.error('데이터 로드 실패:', e); }
+    return {
+      hcgRecords: [
+        { date: '2026-05-02', value: 271.92, note: '1차 베타 hCG' },
+        { date: '2026-05-04', value: 720.34, note: '2차 베타 hCG (×2.65)' }
+      ],
+      milestones: [
+        { date: '2026-04-23', text: '3일 배아 3개 이식 (동결)' },
+        { date: '2026-05-02', text: '1차 베타 hCG: 271.92' },
+        { date: '2026-05-04', text: '2차 베타 hCG: 720.34 (×2.65)' },
+        { date: '2026-05-11', text: 'DCDA 쌍태아 확정 ★' }
+      ],
+      nextCheckup: '2026-05-18',
+      checkupNote: '6주 - 심박 확인',
+      weightRecords: [],
+      bpRecords: []
+    };
+  };
+  const [userData, setUserData] = useState(loadData);
+  const saveData = (newData) => {
+    setUserData(newData);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(newData)); }
+    catch (e) { console.error('저장 실패:', e); }
+  };
+  
+  // 수정 모달 상태
+  const [editModal, setEditModal] = useState(null); // 'hcg' | 'milestone' | 'checkup' | 'weight' | 'bp' | null
+  const [editForm, setEditForm] = useState({});
+  
+  const openEdit = (type) => {
+    setEditModal(type);
+    if (type === 'checkup') {
+      setEditForm({ date: userData.nextCheckup, note: userData.checkupNote });
+    } else {
+      setEditForm({ date: new Date().toISOString().split('T')[0], value: '', note: '', systolic: '', diastolic: '', text: '' });
+    }
+  };
+  const closeEdit = () => { setEditModal(null); setEditForm({}); };
+  
+  const handleSave = () => {
+    const newData = { ...userData };
+    if (editModal === 'hcg') {
+      if (!editForm.date || !editForm.value) return alert('날짜와 hCG 수치를 입력하세요');
+      newData.hcgRecords = [...userData.hcgRecords, { date: editForm.date, value: parseFloat(editForm.value), note: editForm.note || '' }].sort((a,b) => a.date.localeCompare(b.date));
+    } else if (editModal === 'milestone') {
+      if (!editForm.date || !editForm.text) return alert('날짜와 내용을 입력하세요');
+      newData.milestones = [...userData.milestones, { date: editForm.date, text: editForm.text }].sort((a,b) => a.date.localeCompare(b.date));
+    } else if (editModal === 'checkup') {
+      if (!editForm.date) return alert('날짜를 입력하세요');
+      newData.nextCheckup = editForm.date;
+      newData.checkupNote = editForm.note || '';
+    } else if (editModal === 'weight') {
+      if (!editForm.date || !editForm.value) return alert('날짜와 체중을 입력하세요');
+      newData.weightRecords = [...userData.weightRecords, { date: editForm.date, value: parseFloat(editForm.value), note: editForm.note || '' }].sort((a,b) => a.date.localeCompare(b.date));
+    } else if (editModal === 'bp') {
+      if (!editForm.date || !editForm.systolic || !editForm.diastolic) return alert('날짜와 혈압을 입력하세요');
+      newData.bpRecords = [...userData.bpRecords, { date: editForm.date, systolic: parseInt(editForm.systolic), diastolic: parseInt(editForm.diastolic), note: editForm.note || '' }].sort((a,b) => a.date.localeCompare(b.date));
+    }
+    saveData(newData);
+    closeEdit();
+  };
+  
+  const handleDelete = (type, index) => {
+    if (!confirm('정말 삭제하시겠어요?')) return;
+    const newData = { ...userData };
+    if (type === 'hcg') newData.hcgRecords = userData.hcgRecords.filter((_, i) => i !== index);
+    else if (type === 'milestone') newData.milestones = userData.milestones.filter((_, i) => i !== index);
+    else if (type === 'weight') newData.weightRecords = userData.weightRecords.filter((_, i) => i !== index);
+    else if (type === 'bp') newData.bpRecords = userData.bpRecords.filter((_, i) => i !== index);
+    saveData(newData);
+  };
 
   const currentWeek = useMemo(() => getWeekDay(TODAY), []);
   const daysToTwin = useMemo(() => getDaysBetween(TODAY, DUE_DATE_TWIN), []);
-  const daysToNextCheckup = useMemo(() => getDaysBetween(TODAY, new Date('2026-05-18')), []);
+  const daysToNextCheckup = useMemo(() => getDaysBetween(TODAY, new Date(userData.nextCheckup)), [userData.nextCheckup]);
 
   const colors = {
     primary: '#E89BAE', primaryDark: '#C97891', secondary: '#9BC9B5',
@@ -422,13 +500,17 @@ function PregnancySuperApp() {
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white rounded-2xl p-4 shadow-sm">
                 <Heart className="w-5 h-5 mb-2" style={{ color: colors.primary }} />
-                <p className="text-xs" style={{ color: colors.warmGray }}>두 아기 심박</p>
-                <p className="text-lg font-bold" style={{ color: colors.warmGray }}>5/18 예정</p>
+                <p className="text-xs" style={{ color: colors.warmGray }}>다음 검진</p>
+                <p className="text-lg font-bold" style={{ color: colors.warmGray }}>
+                  {new Date(userData.nextCheckup).getMonth()+1}/{new Date(userData.nextCheckup).getDate()} 예정
+                </p>
               </div>
               <div className="bg-white rounded-2xl p-4 shadow-sm">
                 <TrendingUp className="w-5 h-5 mb-2" style={{ color: colors.secondary }} />
                 <p className="text-xs" style={{ color: colors.warmGray }}>최근 hCG</p>
-                <p className="text-lg font-bold" style={{ color: colors.warmGray }}>720.34</p>
+                <p className="text-lg font-bold" style={{ color: colors.warmGray }}>
+                  {userData.hcgRecords.length > 0 ? userData.hcgRecords[userData.hcgRecords.length-1].value : '-'}
+                </p>
               </div>
               <div className="bg-white rounded-2xl p-4 shadow-sm">
                 <Baby className="w-5 h-5 mb-2" style={{ color: colors.accent }} />
@@ -463,22 +545,155 @@ function PregnancySuperApp() {
             </div>
 
             <div className="bg-white rounded-2xl p-5 shadow-sm">
-              <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: colors.warmGray }}>
-                <FileText className="w-4 h-4" style={{ color: colors.primary }} /> 임신 진행 기록
-              </h3>
-              <div className="space-y-2 text-sm">
-                {[
-                  { date: '4/23', text: '3일 배아 3개 이식 (동결)', bold: false },
-                  { date: '5/2', text: '1차 베타 hCG: 271.92', bold: false },
-                  { date: '5/4', text: '2차 베타 hCG: 720.34 (×2.65)', bold: false },
-                  { date: '5/11', text: 'DCDA 쌍태아 확정 ★', bold: true }
-                ].map((r, i) => (
-                  <div key={i} className={`flex justify-between py-1.5 ${i < 3 ? 'border-b border-gray-100' : ''}`}>
-                    <span style={{ color: colors.warmGray }}>{r.date}</span>
-                    <span className={r.bold ? 'font-semibold' : ''} style={{ color: r.bold ? colors.primaryDark : colors.warmGray }}>{r.text}</span>
-                  </div>
-                ))}
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-bold flex items-center gap-2" style={{ color: colors.warmGray }}>
+                  <FileText className="w-4 h-4" style={{ color: colors.primary }} /> 임신 진행 기록
+                </h3>
+                <button onClick={() => openEdit('milestone')} className="text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1" style={{ background: colors.primary, color: 'white' }}>
+                  + 추가
+                </button>
               </div>
+              <div className="space-y-2 text-sm">
+                {userData.milestones.map((r, i) => {
+                  const d = new Date(r.date);
+                  const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+                  const isLatest = i === userData.milestones.length - 1;
+                  return (
+                    <div key={i} className={`flex justify-between items-center py-1.5 ${i < userData.milestones.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                      <span style={{ color: colors.warmGray }}>{dateStr}</span>
+                      <div className="flex items-center gap-2 flex-1 justify-end">
+                        <span className={isLatest ? 'font-semibold' : ''} style={{ color: isLatest ? colors.primaryDark : colors.warmGray }}>{r.text}</span>
+                        <button onClick={() => handleDelete('milestone', i)} className="text-xs" style={{ color: colors.danger, opacity: 0.6 }}>×</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* hCG 기록 */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-bold flex items-center gap-2" style={{ color: colors.warmGray }}>
+                  <TrendingUp className="w-4 h-4" style={{ color: colors.secondary }} /> hCG 추이
+                </h3>
+                <button onClick={() => openEdit('hcg')} className="text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1" style={{ background: colors.secondary, color: 'white' }}>
+                  + 추가
+                </button>
+              </div>
+              {userData.hcgRecords.length === 0 ? (
+                <p className="text-xs text-center py-3" style={{ color: colors.warmGray, opacity: 0.5 }}>아직 기록이 없습니다</p>
+              ) : (
+                <div className="space-y-2 text-sm">
+                  {userData.hcgRecords.map((r, i) => {
+                    const d = new Date(r.date);
+                    const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+                    return (
+                      <div key={i} className={`flex justify-between items-center py-1.5 ${i < userData.hcgRecords.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                        <span style={{ color: colors.warmGray }}>{dateStr}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold" style={{ color: colors.primaryDark }}>{r.value}</span>
+                          {r.note && <span className="text-xs" style={{ color: colors.warmGray, opacity: 0.6 }}>{r.note}</span>}
+                          <button onClick={() => handleDelete('hcg', i)} className="text-xs" style={{ color: colors.danger, opacity: 0.6 }}>×</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 다음 검진 일정 */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-bold flex items-center gap-2" style={{ color: colors.warmGray }}>
+                  <Calendar className="w-4 h-4" style={{ color: colors.primary }} /> 다음 검진
+                </h3>
+                <button onClick={() => openEdit('checkup')} className="text-xs px-2 py-1 rounded-full font-semibold" style={{ background: colors.primary, color: 'white' }}>
+                  수정
+                </button>
+              </div>
+              <div className="p-3 rounded-xl" style={{ background: colors.cream }}>
+                <p className="text-lg font-bold" style={{ color: colors.primaryDark }}>
+                  {new Date(userData.nextCheckup).getMonth()+1}월 {new Date(userData.nextCheckup).getDate()}일 (D-{daysToNextCheckup})
+                </p>
+                {userData.checkupNote && <p className="text-xs mt-1" style={{ color: colors.warmGray }}>{userData.checkupNote}</p>}
+              </div>
+            </div>
+
+            {/* 체중 기록 */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-bold flex items-center gap-2" style={{ color: colors.warmGray }}>
+                  ⚖️ 체중 기록
+                </h3>
+                <button onClick={() => openEdit('weight')} className="text-xs px-2 py-1 rounded-full font-semibold" style={{ background: colors.accent, color: 'white' }}>
+                  + 추가
+                </button>
+              </div>
+              {userData.weightRecords.length === 0 ? (
+                <p className="text-xs text-center py-3" style={{ color: colors.warmGray, opacity: 0.5 }}>주 1회 기록 권장. 쌍태아 권장 증가량 17-25kg</p>
+              ) : (
+                <div className="space-y-2 text-sm">
+                  {userData.weightRecords.slice(-5).reverse().map((r, idx) => {
+                    const realIdx = userData.weightRecords.length - 1 - idx;
+                    const d = new Date(r.date);
+                    const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+                    const prev = realIdx > 0 ? userData.weightRecords[realIdx-1].value : null;
+                    const diff = prev ? (r.value - prev).toFixed(1) : null;
+                    return (
+                      <div key={realIdx} className="flex justify-between items-center py-1.5 border-b border-gray-100">
+                        <span style={{ color: colors.warmGray }}>{dateStr}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold" style={{ color: colors.primaryDark }}>{r.value}kg</span>
+                          {diff && <span className="text-xs" style={{ color: diff > 0 ? colors.danger : colors.success }}>{diff > 0 ? '+' : ''}{diff}kg</span>}
+                          <button onClick={() => handleDelete('weight', realIdx)} className="text-xs" style={{ color: colors.danger, opacity: 0.6 }}>×</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {userData.weightRecords.length > 5 && <p className="text-xs text-center mt-2" style={{ color: colors.warmGray, opacity: 0.5 }}>최근 5개만 표시</p>}
+                </div>
+              )}
+            </div>
+
+            {/* 혈압 기록 */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-bold flex items-center gap-2" style={{ color: colors.warmGray }}>
+                  🩺 혈압 기록
+                </h3>
+                <button onClick={() => openEdit('bp')} className="text-xs px-2 py-1 rounded-full font-semibold" style={{ background: colors.danger, color: 'white' }}>
+                  + 추가
+                </button>
+              </div>
+              {userData.bpRecords.length === 0 ? (
+                <p className="text-xs text-center py-3" style={{ color: colors.warmGray, opacity: 0.5 }}>⭐ 쌍태아 임신중독 위험 2-3배. 주 1-2회 권장. 정상 120/80 이하</p>
+              ) : (
+                <div className="space-y-2 text-sm">
+                  {userData.bpRecords.slice(-5).reverse().map((r, idx) => {
+                    const realIdx = userData.bpRecords.length - 1 - idx;
+                    const d = new Date(r.date);
+                    const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+                    const isHigh = r.systolic >= 140 || r.diastolic >= 90;
+                    const isElevated = (r.systolic >= 130 && r.systolic < 140) || (r.diastolic >= 80 && r.diastolic < 90);
+                    return (
+                      <div key={realIdx} className="flex justify-between items-center py-1.5 border-b border-gray-100">
+                        <span style={{ color: colors.warmGray }}>{dateStr}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold" style={{ color: isHigh ? colors.danger : isElevated ? colors.accent : colors.primaryDark }}>
+                            {r.systolic}/{r.diastolic}
+                          </span>
+                          {isHigh && <span className="text-xs font-bold" style={{ color: colors.danger }}>⚠️ 고혈압</span>}
+                          {isElevated && <span className="text-xs" style={{ color: colors.accent }}>주의</span>}
+                          <button onClick={() => handleDelete('bp', realIdx)} className="text-xs" style={{ color: colors.danger, opacity: 0.6 }}>×</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {userData.bpRecords.length > 5 && <p className="text-xs text-center mt-2" style={{ color: colors.warmGray, opacity: 0.5 }}>최근 5개만 표시</p>}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1183,6 +1398,122 @@ function PregnancySuperApp() {
           </div>
         )}
       </main>
+
+      {/* 🔧 수정 모달 */}
+      {editModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={closeEdit}>
+          <div className="bg-white w-full max-w-2xl rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold text-xl" style={{ color: colors.primaryDark }}>
+                {editModal === 'hcg' && '🩸 hCG 수치 추가'}
+                {editModal === 'milestone' && '📝 진행 기록 추가'}
+                {editModal === 'checkup' && '📅 다음 검진 수정'}
+                {editModal === 'weight' && '⚖️ 체중 추가'}
+                {editModal === 'bp' && '🩺 혈압 추가'}
+              </h2>
+              <button onClick={closeEdit}>
+                <X className="w-5 h-5" style={{ color: colors.warmGray }} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* 날짜 입력 (모든 폼 공통) */}
+              <div>
+                <label className="text-xs font-semibold block mb-1" style={{ color: colors.warmGray }}>날짜</label>
+                <input type="date" value={editForm.date || ''} onChange={e => setEditForm({...editForm, date: e.target.value})} 
+                  className="w-full p-3 rounded-xl border" style={{ borderColor: colors.soft, background: colors.cream }} />
+              </div>
+              
+              {/* hCG 폼 */}
+              {editModal === 'hcg' && (
+                <>
+                  <div>
+                    <label className="text-xs font-semibold block mb-1" style={{ color: colors.warmGray }}>hCG 수치 (mIU/mL) *</label>
+                    <input type="number" step="0.01" placeholder="예: 720.34" value={editForm.value || ''} onChange={e => setEditForm({...editForm, value: e.target.value})}
+                      className="w-full p-3 rounded-xl border" style={{ borderColor: colors.soft, background: colors.cream }} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold block mb-1" style={{ color: colors.warmGray }}>메모 (선택)</label>
+                    <input type="text" placeholder="예: 3차 베타" value={editForm.note || ''} onChange={e => setEditForm({...editForm, note: e.target.value})}
+                      className="w-full p-3 rounded-xl border" style={{ borderColor: colors.soft, background: colors.cream }} />
+                  </div>
+                </>
+              )}
+              
+              {/* 진행 기록 폼 */}
+              {editModal === 'milestone' && (
+                <div>
+                  <label className="text-xs font-semibold block mb-1" style={{ color: colors.warmGray }}>내용 *</label>
+                  <textarea placeholder="예: 6주 심박 확인 / 정밀초음파 / NIPT 검사" value={editForm.text || ''} onChange={e => setEditForm({...editForm, text: e.target.value})}
+                    className="w-full p-3 rounded-xl border min-h-[80px]" style={{ borderColor: colors.soft, background: colors.cream }} />
+                </div>
+              )}
+              
+              {/* 검진 폼 */}
+              {editModal === 'checkup' && (
+                <div>
+                  <label className="text-xs font-semibold block mb-1" style={{ color: colors.warmGray }}>검진 내용 (선택)</label>
+                  <input type="text" placeholder="예: 7주 심박 확인" value={editForm.note || ''} onChange={e => setEditForm({...editForm, note: e.target.value})}
+                    className="w-full p-3 rounded-xl border" style={{ borderColor: colors.soft, background: colors.cream }} />
+                </div>
+              )}
+              
+              {/* 체중 폼 */}
+              {editModal === 'weight' && (
+                <>
+                  <div>
+                    <label className="text-xs font-semibold block mb-1" style={{ color: colors.warmGray }}>체중 (kg) *</label>
+                    <input type="number" step="0.1" placeholder="예: 55.5" value={editForm.value || ''} onChange={e => setEditForm({...editForm, value: e.target.value})}
+                      className="w-full p-3 rounded-xl border" style={{ borderColor: colors.soft, background: colors.cream }} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold block mb-1" style={{ color: colors.warmGray }}>메모 (선택)</label>
+                    <input type="text" placeholder="예: 아침 공복" value={editForm.note || ''} onChange={e => setEditForm({...editForm, note: e.target.value})}
+                      className="w-full p-3 rounded-xl border" style={{ borderColor: colors.soft, background: colors.cream }} />
+                  </div>
+                </>
+              )}
+              
+              {/* 혈압 폼 */}
+              {editModal === 'bp' && (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs font-semibold block mb-1" style={{ color: colors.warmGray }}>수축기 *</label>
+                      <input type="number" placeholder="예: 120" value={editForm.systolic || ''} onChange={e => setEditForm({...editForm, systolic: e.target.value})}
+                        className="w-full p-3 rounded-xl border" style={{ borderColor: colors.soft, background: colors.cream }} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold block mb-1" style={{ color: colors.warmGray }}>이완기 *</label>
+                      <input type="number" placeholder="예: 80" value={editForm.diastolic || ''} onChange={e => setEditForm({...editForm, diastolic: e.target.value})}
+                        className="w-full p-3 rounded-xl border" style={{ borderColor: colors.soft, background: colors.cream }} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold block mb-1" style={{ color: colors.warmGray }}>메모 (선택)</label>
+                    <input type="text" placeholder="예: 아침 측정" value={editForm.note || ''} onChange={e => setEditForm({...editForm, note: e.target.value})}
+                      className="w-full p-3 rounded-xl border" style={{ borderColor: colors.soft, background: colors.cream }} />
+                  </div>
+                  <div className="p-3 rounded-xl text-xs" style={{ background: colors.cream, color: colors.warmGray }}>
+                    <p><strong>정상</strong>: 120/80 이하</p>
+                    <p><strong>주의</strong>: 130-139 / 80-89</p>
+                    <p style={{ color: colors.danger }}><strong>고혈압 (병원)</strong>: 140/90 이상</p>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <div className="flex gap-2 mt-6">
+              <button onClick={closeEdit} className="flex-1 py-3 rounded-xl font-semibold text-sm" style={{ background: colors.cream, color: colors.warmGray }}>
+                취소
+              </button>
+              <button onClick={handleSave} className="flex-1 py-3 rounded-xl font-semibold text-sm" style={{ background: colors.primary, color: 'white' }}>
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 응급 모달 */}
       {showEmergency && (
