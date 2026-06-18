@@ -20,6 +20,16 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- React (UMD - 전역 변수 방식, 가장 안정적) -->
+    <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+
+    <!-- lucide (UMD - 전역 변수 방식) -->
+    <script src="https://unpkg.com/lucide@0.378.0/dist/umd/lucide.min.js"></script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <!-- 한글 폰트 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -34,31 +44,93 @@
         }
         * { -webkit-user-select: none; user-select: none; }
         input, textarea { -webkit-user-select: text; user-select: text; }
-        #loading { display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Noto Sans KR', sans-serif; color: #C97891; }
+        #loading { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Noto Sans KR', sans-serif; color: #C97891; gap: 12px; }
+        #errbox { display:none; padding: 20px; margin: 20px; background:#FFE5E5; border-radius:16px; color:#C0392B; font-family: 'Noto Sans KR', sans-serif; font-size: 14px; line-height: 1.6; }
     </style>
 </head>
 <body>
-    <div id="root"><div id="loading">앱 로딩 중...</div></div>
-
-    <!-- Import Map: React 모듈 매핑 -->
-    <script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18.3.1",
-            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-            "lucide-react": "https://esm.sh/lucide-react@0.383.0?deps=react@18.3.1"
-        }
-    }
-    </script>
-
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <div id="root">
+      <div id="loading">
+        <div style="font-size:32px">🤍</div>
+        <div>앱 로딩 중...</div>
+        <div style="font-size:12px;opacity:0.6">잠시만 기다려주세요</div>
+      </div>
+    </div>
+    <div id="errbox"></div>
 
     <!-- 앱 컴포넌트 코드 -->
-    <script type="text/babel" data-type="module" data-presets="react">
-import React, { useState, useMemo } from 'react';
-import { createRoot } from 'react-dom/client';
-import { Heart, Calendar, Apple, Activity, Gift, AlertCircle, Baby, ChevronRight, ChevronDown, Clock, MapPin, Phone, Pill, Coffee, Moon, Dumbbell, Shield, FileText, Sparkles, TrendingUp, Bell, Home, Book, X, ShoppingBag, Shirt, Package, ExternalLink, CheckCircle2 } from 'lucide-react';
+    <script type="text/babel" data-presets="react">
+// React 훅을 전역에서 가져오기 (UMD 방식)
+const { useState, useMemo } = React;
+const { createRoot } = ReactDOM;
+
+// lucide 아이콘을 React 컴포넌트로 변환하는 헬퍼
+// lucide UMD 구조: lucide.Heart = ["svg", {svg속성}, [["path", {d:...}], ...]]
+const lucideLib = (typeof lucide !== 'undefined') ? lucide : (window.lucide || {});
+
+function makeIcon(iconName) {
+  return function IconComponent(props) {
+    const { size = 24, className = '', style = {}, color, ...rest } = props || {};
+    const iconData = lucideLib[iconName];
+    const children = [];
+    let svgAttrs = {};
+    if (iconData && Array.isArray(iconData) && iconData.length >= 3) {
+      svgAttrs = iconData[1] || {};
+      const nodeArray = iconData[2] || [];
+      nodeArray.forEach((child, i) => {
+        if (Array.isArray(child) && child.length >= 2) {
+          // child[1]의 stroke-width 등 kebab-case 속성을 React용으로 변환
+          const attrs = {};
+          for (const key in child[1]) {
+            attrs[key] = child[1][key];
+          }
+          attrs.key = i;
+          children.push(React.createElement(child[0], attrs));
+        }
+      });
+    }
+    return React.createElement('svg', {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: size, height: size,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: color || 'currentColor',
+      strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
+      className: className, style: style, ...rest
+    }, children);
+  };
+}
+
+// 아이콘 매핑 (lucide UMD는 PascalCase 사용)
+const Heart = makeIcon('Heart');
+const Calendar = makeIcon('Calendar');
+const Apple = makeIcon('Apple');
+const Activity = makeIcon('Activity');
+const Gift = makeIcon('Gift');
+const AlertCircle = makeIcon('AlertCircle');
+const Baby = makeIcon('Baby');
+const ChevronRight = makeIcon('ChevronRight');
+const ChevronDown = makeIcon('ChevronDown');
+const Clock = makeIcon('Clock');
+const MapPin = makeIcon('MapPin');
+const Phone = makeIcon('Phone');
+const Pill = makeIcon('Pill');
+const Coffee = makeIcon('Coffee');
+const Moon = makeIcon('Moon');
+const Dumbbell = makeIcon('Dumbbell');
+const Shield = makeIcon('Shield');
+const FileText = makeIcon('FileText');
+const Sparkles = makeIcon('Sparkles');
+const TrendingUp = makeIcon('TrendingUp');
+const Bell = makeIcon('Bell');
+const Home = makeIcon('Home');
+const Book = makeIcon('Book');
+const X = makeIcon('X');
+const ShoppingBag = makeIcon('ShoppingBag');
+const Shirt = makeIcon('Shirt');
+const Package = makeIcon('Package');
+const ExternalLink = makeIcon('ExternalLink');
+const CheckCircle2 = makeIcon('CheckCircle2');
 
 const TRANSFER_DATE = new Date('2026-04-23');
 const TODAY = new Date(); // 실시간 현재 날짜 자동 적용
@@ -1588,8 +1660,35 @@ function PregnancySuperApp() {
   );
 }
 
-const root = createRoot(document.getElementById('root'));
-root.render(<PregnancySuperApp />);
+
+// 앱 렌더링 (에러 핸들링 포함)
+try {
+  const root = createRoot(document.getElementById('root'));
+  root.render(<PregnancySuperApp />);
+} catch (err) {
+  document.getElementById('root').style.display = 'none';
+  const errbox = document.getElementById('errbox');
+  errbox.style.display = 'block';
+  errbox.innerHTML = '<strong>앱 로딩 중 오류가 발생했어요</strong><br><br>' +
+    '인터넷 연결을 확인하고 새로고침해주세요.<br><br>' +
+    '<span style="font-size:11px;opacity:0.7">' + (err && err.message ? err.message : '알 수 없는 오류') + '</span>';
+  console.error('앱 렌더링 오류:', err);
+}
+    </script>
+
+    <!-- 로딩 타임아웃 감지 (10초 후에도 로딩 중이면 안내) -->
+    <script>
+    setTimeout(function() {
+      var loading = document.getElementById('loading');
+      if (loading && loading.offsetParent !== null) {
+        var errbox = document.getElementById('errbox');
+        errbox.style.display = 'block';
+        errbox.innerHTML = '<strong>로딩이 오래 걸리고 있어요</strong><br><br>' +
+          '1. 인터넷 연결(Wi-Fi/데이터)을 확인해주세요<br>' +
+          '2. 페이지를 새로고침해주세요<br>' +
+          '3. 그래도 안 되면 잠시 후 다시 시도해주세요';
+      }
+    }, 10000);
     </script>
 </body>
 </html>
