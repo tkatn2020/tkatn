@@ -4,48 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#E89BAE" />
-
-    <!-- PWA / iOS 홈 화면 추가 설정 -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="경민의 임신일기" />
-
-    <!-- 아이콘 (SVG inline) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23E89BAE'/%3E%3Cpath d='M50 75 L25 50 A15 15 0 1 1 50 35 A15 15 0 1 1 75 50 Z' fill='white'/%3E%3C/svg%3E" />
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23E89BAE'/%3E%3Cpath d='M50 75 L25 50 A15 15 0 1 1 50 35 A15 15 0 1 1 75 50 Z' fill='white'/%3E%3C/svg%3E" />
-
     <title>경민의 임신일기</title>
-
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- React (UMD - 전역 변수 방식, 가장 안정적) -->
     <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-
-    <!-- lucide (UMD - 전역 변수 방식) -->
-    <script src="https://unpkg.com/lucide@0.378.0/dist/umd/lucide.min.js"></script>
-
-    <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <!-- 한글 폰트 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
-
     <style>
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            margin: 0;
-            -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none;
-        }
+        body { font-family: 'Noto Sans KR', sans-serif; margin: 0; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
         * { -webkit-user-select: none; user-select: none; }
         input, textarea { -webkit-user-select: text; user-select: text; }
         #loading { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Noto Sans KR', sans-serif; color: #C97891; gap: 12px; }
-        #errbox { display:none; padding: 20px; margin: 20px; background:#FFE5E5; border-radius:16px; color:#C0392B; font-family: 'Noto Sans KR', sans-serif; font-size: 14px; line-height: 1.6; }
+        #errbox { display:none; padding: 20px; margin: 20px; background:#FFE5E5; border-radius:16px; color:#C0392B; font-size: 14px; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -58,60 +36,43 @@
     </div>
     <div id="errbox"></div>
 
-    <!-- 앱 컴포넌트 코드 -->
-    <script type="text/babel" data-presets="react">
-// React 훅을 전역에서 가져오기 (UMD 방식)
+    <script type="text/plain" id="app-source">
 const { useState, useMemo } = React;
 const { createRoot } = ReactDOM;
 
-// lucide 아이콘을 React 컴포넌트로 변환하는 헬퍼
-// lucide UMD 구조: lucide.Heart = ["svg", {svg속성}, [["path", {d:...}], ...]]
-const lucideLib = (typeof lucide !== 'undefined') ? lucide : (window.lucide || {});
+// lucide 아이콘 SVG 데이터 (인라인 - 외부 의존성 없음)
+const ICON_DATA = {"Baby":[["path",{"d":"M9 12h.01"}],["path",{"d":"M15 12h.01"}],["path",{"d":"M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5"}],["path",{"d":"M19 6.3a9 9 0 0 1 1.8 3.9 2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1"}]],"Bell":[["path",{"d":"M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"}],["path",{"d":"M10.3 21a1.94 1.94 0 0 0 3.4 0"}]],"Calendar":[["path",{"d":"M8 2v4"}],["path",{"d":"M16 2v4"}],["rect",{"width":"18","height":"18","x":"3","y":"4","rx":"2"}],["path",{"d":"M3 10h18"}]],"CheckCircle2":[["circle",{"cx":"12","cy":"12","r":"10"}],["path",{"d":"m9 12 2 2 4-4"}]],"ChevronDown":[["path",{"d":"m6 9 6 6 6-6"}]],"ChevronRight":[["path",{"d":"m9 18 6-6-6-6"}]],"Coffee":[["path",{"d":"M10 2v2"}],["path",{"d":"M14 2v2"}],["path",{"d":"M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"}],["path",{"d":"M6 2v2"}]],"Dumbbell":[["path",{"d":"M14.4 14.4 9.6 9.6"}],["path",{"d":"M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"}],["path",{"d":"m21.5 21.5-1.4-1.4"}],["path",{"d":"M3.9 3.9 2.5 2.5"}],["path",{"d":"M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z"}]],"FileText":[["path",{"d":"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"}],["path",{"d":"M14 2v4a2 2 0 0 0 2 2h4"}],["path",{"d":"M10 9H8"}],["path",{"d":"M16 13H8"}],["path",{"d":"M16 17H8"}]],"Heart":[["path",{"d":"M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"}]],"MapPin":[["path",{"d":"M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"}],["circle",{"cx":"12","cy":"10","r":"3"}]],"Moon":[["path",{"d":"M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"}]],"Phone":[["path",{"d":"M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"}]],"Pill":[["path",{"d":"m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"}],["path",{"d":"m8.5 8.5 7 7"}]],"Shield":[["path",{"d":"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"}]],"Sparkles":[["path",{"d":"M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"}],["path",{"d":"M20 3v4"}],["path",{"d":"M22 5h-4"}],["path",{"d":"M4 17v2"}],["path",{"d":"M5 18H3"}]],"TrendingUp":[["polyline",{"points":"22 7 13.5 15.5 8.5 10.5 2 17"}],["polyline",{"points":"16 7 22 7 22 13"}]],"X":[["path",{"d":"M18 6 6 18"}],["path",{"d":"m6 6 12 12"}]]};
 
 function makeIcon(iconName) {
   return function IconComponent(props) {
-    const { size = 24, className = '', style = {}, color, ...rest } = props || {};
-    const iconData = lucideLib[iconName];
-    const children = [];
-    let svgAttrs = {};
-    if (iconData && Array.isArray(iconData) && iconData.length >= 3) {
-      svgAttrs = iconData[1] || {};
-      const nodeArray = iconData[2] || [];
-      nodeArray.forEach((child, i) => {
-        if (Array.isArray(child) && child.length >= 2) {
-          // child[1]의 stroke-width 등 kebab-case 속성을 React용으로 변환
-          const attrs = {};
-          for (const key in child[1]) {
-            attrs[key] = child[1][key];
-          }
-          attrs.key = i;
-          children.push(React.createElement(child[0], attrs));
-        }
-      });
-    }
+    const p = props || {};
+    const size = p.size || 24;
+    const className = p.className || '';
+    const style = p.style || {};
+    const color = p.color;
+    const nodes = ICON_DATA[iconName] || [];
+    const children = nodes.map(function(child, i) {
+      const tag = child[0];
+      const attrs = Object.assign({ key: i }, child[1]);
+      return React.createElement(tag, attrs);
+    });
     return React.createElement('svg', {
       xmlns: 'http://www.w3.org/2000/svg',
-      width: size, height: size,
-      viewBox: '0 0 24 24',
-      fill: 'none',
-      stroke: color || 'currentColor',
+      width: size, height: size, viewBox: '0 0 24 24',
+      fill: 'none', stroke: color || 'currentColor',
       strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
-      className: className, style: style, ...rest
+      className: className, style: style
     }, children);
   };
 }
 
-// 아이콘 매핑 (lucide UMD는 PascalCase 사용)
 const Heart = makeIcon('Heart');
 const Calendar = makeIcon('Calendar');
-const Apple = makeIcon('Apple');
 const Activity = makeIcon('Activity');
 const Gift = makeIcon('Gift');
-const AlertCircle = makeIcon('AlertCircle');
 const Baby = makeIcon('Baby');
 const ChevronRight = makeIcon('ChevronRight');
 const ChevronDown = makeIcon('ChevronDown');
-const Clock = makeIcon('Clock');
 const MapPin = makeIcon('MapPin');
 const Phone = makeIcon('Phone');
 const Pill = makeIcon('Pill');
@@ -124,13 +85,16 @@ const Sparkles = makeIcon('Sparkles');
 const TrendingUp = makeIcon('TrendingUp');
 const Bell = makeIcon('Bell');
 const Home = makeIcon('Home');
-const Book = makeIcon('Book');
 const X = makeIcon('X');
 const ShoppingBag = makeIcon('ShoppingBag');
+const CheckCircle2 = makeIcon('CheckCircle2');
+const Apple = makeIcon('Apple');
+const AlertCircle = makeIcon('AlertCircle');
+const Clock = makeIcon('Clock');
+const Book = makeIcon('Book');
 const Shirt = makeIcon('Shirt');
 const Package = makeIcon('Package');
 const ExternalLink = makeIcon('ExternalLink');
-const CheckCircle2 = makeIcon('CheckCircle2');
 
 const TRANSFER_DATE = new Date('2026-04-23');
 const TODAY = new Date(); // 실시간 현재 날짜 자동 적용
@@ -1662,18 +1626,48 @@ function PregnancySuperApp() {
 
 
 // 앱 렌더링 (에러 핸들링 포함)
-try {
-  const root = createRoot(document.getElementById('root'));
-  root.render(<PregnancySuperApp />);
-} catch (err) {
-  document.getElementById('root').style.display = 'none';
-  const errbox = document.getElementById('errbox');
-  errbox.style.display = 'block';
-  errbox.innerHTML = '<strong>앱 로딩 중 오류가 발생했어요</strong><br><br>' +
-    '인터넷 연결을 확인하고 새로고침해주세요.<br><br>' +
-    '<span style="font-size:11px;opacity:0.7">' + (err && err.message ? err.message : '알 수 없는 오류') + '</span>';
-  console.error('앱 렌더링 오류:', err);
-}
+    </script>
+
+    <!-- JSX를 classic runtime으로 명시적으로 컴파일 후 실행 -->
+    <script>
+    (function() {
+      function showError(msg, detail) {
+        var root = document.getElementById('root');
+        if (root) root.style.display = 'none';
+        var errbox = document.getElementById('errbox');
+        if (errbox) {
+          errbox.style.display = 'block';
+          errbox.innerHTML = '<strong>' + msg + '</strong><br><br>' +
+            (detail || '') +
+            (detail ? '<br><br>' : '');
+        }
+      }
+      try {
+        // 라이브러리 로드 확인
+        if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+          showError('필수 라이브러리 로딩 실패', '인터넷 연결을 확인하고 새로고침해주세요. (React)');
+          return;
+        }
+        if (typeof Babel === 'undefined') {
+          showError('필수 라이브러리 로딩 실패', '인터넷 연결을 확인하고 새로고침해주세요. (Babel)');
+          return;
+        }
+        // JSX 소스 가져오기
+        var source = document.getElementById('app-source').textContent;
+        // classic runtime 명시 (automatic import 방지)
+        var compiled = Babel.transform(source, {
+          presets: [['react', { runtime: 'classic' }]]
+        }).code;
+        // 실행
+        var runApp = new Function('React', 'ReactDOM', compiled +
+          '\n;var root = ReactDOM.createRoot(document.getElementById("root")); root.render(React.createElement(PregnancySuperApp));');
+        runApp(React, ReactDOM);
+      } catch (err) {
+        showError('앱 로딩 중 오류가 발생했어요',
+          '새로고침해주세요.<br><span style="font-size:11px;opacity:0.7">' + (err && err.message ? err.message : '알 수 없는 오류') + '</span>');
+        console.error('앱 오류:', err);
+      }
+    })();
     </script>
 
     <!-- 로딩 타임아웃 감지 (10초 후에도 로딩 중이면 안내) -->
